@@ -14,20 +14,38 @@ description: >
 
 # CSA Presentation Skill
 
-## ⛔ INVIOLABLE RULE — FILE-FIRST WORKFLOW
+## ⛔ TWO INVIOLABLE RULES
 
-**THIS IS A HARD CONSTRAINT, NOT A SUGGESTION. VIOLATION = BROKEN OUTPUT.**
+**These are HARD CONSTRAINTS, not suggestions. Violation = broken output.**
+
+### Rule 1: FILE-FIRST — All work must be written to files
 
 The workspace markdown files (task_plan.md, style_contract.md, findings.md) are the
-**single source of truth** for this presentation. Sub-agents READ these files. If they
-don't exist, sub-agents have no input and produce garbage.
-
-**THEREFORE: Execute the steps below in EXACT ORDER. No reordering. No skipping.**
+**single source of truth**. Sub-agents READ these files. If they don't exist, sub-agents
+have no input and produce garbage.
 
 - ❌ Running `python3` (diagrams) before task_plan.md exists = FORBIDDEN
 - ❌ Generating HTML/PPTX slides before style_contract.md exists = FORBIDDEN
 - ❌ Creating ANY content before the workspace directory exists = FORBIDDEN
 - ✅ The ONLY correct first action is: `mkdir -p outputs/{project}/...`
+
+### Rule 2: UPDATE-AFTER-EVERY-TASK — Enable resume from interruption
+
+**After completing ANY task (research, diagram, slide, assembly, review), IMMEDIATELY
+update `task_plan.md` to mark that task `[x]`.**
+
+This is critical because:
+- Sessions can be interrupted at any time (`/clear`, timeout, crash)
+- On resume, the FIRST thing to do is `Read task_plan.md` to see what's done
+- If task_plan.md is not updated, resume starts from scratch = wasted work
+
+**Resume protocol** (when starting a new session in an existing workspace):
+1. Call `ls outputs/` to find existing project directories
+2. Call Read tool → `outputs/{project}/task_plan.md`
+3. Find the first unchecked `[ ]` task → continue from there
+4. Do NOT redo tasks already marked `[x]`
+
+**THEREFORE: Execute the steps below in EXACT ORDER. No reordering. No skipping.**
 
 ### Step 1 → Determine project name, then create directories
 
