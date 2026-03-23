@@ -23,7 +23,9 @@ The orchestrator dispatches specialized sub-agents for each phase of the workflo
 | Agent | Phase | Role |
 |-------|-------|------|
 | **Research Agent** | Phase 1 | Gathers Azure docs, features, case studies, and industry context |
+| **Diagram Agent** | Phase 2 | Generates architecture diagrams and technical visuals |
 | **Slide Builder Agent** | Phase 3 | Builds individual slides per the Style Contract (parallelizable) |
+| **Assembly Agent** | Phase 4 | Merges slides + diagrams into final deck |
 | **Review Agent** | Phase 5 | Quality review across 7 dimensions, max 2 rounds |
 | **Fix Agent** | Phase 5 | Applies targeted fixes from the review report |
 

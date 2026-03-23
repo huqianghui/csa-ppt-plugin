@@ -364,19 +364,21 @@ relevant agent file before spawning it.
 | Agent | File | When to Spawn |
 |-------|------|--------------|
 | **Research Agent** | `agents/research-agent.md` | Phase 1 — gather Azure docs, features, case studies |
+| **Diagram Agent** | `agents/diagram-agent.md` | Phase 2 — generate architecture diagrams and visuals |
 | **Slide Builder Agent** | `agents/slide-builder-agent.md` | Phase 3 — build individual slides (parallelizable) |
+| **Assembly Agent** | `agents/assembly-agent.md` | Phase 4 — merge slides + diagrams into final deck |
 | **Review Agent** | `agents/review-agent.md` | Phase 5 — quality review (7 dimensions, max 2 rounds) |
 | **Fix Agent** | `agents/fix-agent.md` | Phase 5 — apply fixes from review report |
 
 **Agent interaction flow:**
 ```
 Phase 1: Research Agent → findings.md
-Phase 2: Diagram generation (azure-diagrams / excalidraw)
-Phase 3: Slide Builder Agent(s) → slide files (can run in parallel)
-Phase 4: Assembly → final deck
+Phase 2: Diagram Agent → diagram images + diagram-manifest.md
+Phase 3: Slide Builder Agent(s) → slide files + manifest.md (parallelizable)
+Phase 4: Assembly Agent → final-deck.pptx/html + assembly-report.md
 Phase 5: Review Agent (Round 1) → review_report.md
          Fix Agent → apply fixes → fix_summary.md
-         Review Agent (Round 2) → final verdict
+         Review Agent (Round 2) → final verdict → deliver
 ```
 
 Each sub-agent receives the **Style Contract** and **sub-skill SKILL.md** as part of
