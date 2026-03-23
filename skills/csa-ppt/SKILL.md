@@ -187,83 +187,77 @@ For 5+ slides, also read `planning-with-files/SKILL.md` for the full system.
 
 ### task_plan.md Template
 
-Write this to `outputs/{project-name}/task_plan.md` in Step 1 of the Execution Protocol:
+Write this to `outputs/{project}/task_plan.md` in Step 1. **Replace ALL placeholders
+with content from the user's ACTUAL request. Do NOT copy the example text verbatim.**
 
 ```markdown
 ## Goal
-Create a 10-slide customer demo about Azure RAG solution for a finance company.
+{Describe the actual presentation goal based on user's request}
 
 ## Style Contract
-- **Color palette**: Azure Blue (#0078D4), Dark (#1B1B1B), Light Gray (#F5F5F5), Accent (#50E6FF)
-- **Font**: Arial (headings), Segoe UI (body), Consolas (code)
-- **Language**: Chinese (中文)
-- **Layout rules**: Max 6 lines per slide, max 6 words per bullet
-- **Diagram style**: Azure official icons, blue/green/orange color coding
-- **Output format**: .pptx via html2pptx
+- **Color palette**: {Choose appropriate colors for the topic}
+- **Font**: {Choose appropriate fonts}
+- **Language**: {Language from Rule 1 answers or user's request}
+- **Layout rules**: Max 6 lines per slide, max 8 words per bullet
+- **Diagram style**: {If diagrams needed, describe style}
+- **Output format**: {Format from Rule 1 answers or user's request}
 
 ## Phases
 
 ### Phase 1: Research & Content Preparation
 **Status:** pending
-- [ ] Research Azure OpenAI + AI Search latest features
-- [ ] Gather financial industry RAG reference architectures
+- [ ] {Research task 1 based on actual topic}
+- [ ] {Research task 2}
 - [ ] Save findings to findings.md
 
 ### Phase 2: Diagram Generation
 **Status:** pending
-- [ ] Generate RAG architecture overview diagram (azure-diagrams)
-- [ ] Generate data pipeline diagram (azure-diagrams)
+- [ ] {Diagram 1 based on actual content needs}
+- [ ] {Diagram 2 if needed}
 
 ### Phase 3: Slide-by-Slide Creation
 **Status:** pending
-- [ ] Slide 1: Title — "企业级RAG智能检索方案"
-- [ ] Slide 2: Agenda / 目录
-- [ ] Slide 3: Customer challenges / 客户痛点
-- [ ] Slide 4: Solution overview / 方案概览
-- [ ] Slide 5: Architecture deep-dive / 架构详解 (embed diagram)
-- [ ] Slide 6: Data pipeline / 数据处理流程 (embed diagram)
-- [ ] Slide 7: Chinese document optimization / 中文文档优化
-- [ ] Slide 8: Security & compliance / 安全合规
-- [ ] Slide 9: Implementation roadmap / 实施路径
-- [ ] Slide 10: Next steps / 下一步
+- [ ] Slide 1: {Actual title from user's topic}
+- [ ] Slide 2: {Actual slide content}
+- [ ] ...{One line per slide, based on Rule 1 answers for slide count}
 
 ### Phase 4: Assembly
 **Status:** pending
-- [ ] Assemble all slides into final .pptx
+- [ ] Assemble all slides into final deck
 - [ ] Add speaker notes
 - [ ] Verify file opens correctly
 
 ### Phase 5: Review & Fix (max 2 rounds)
 **Status:** pending
-- [ ] Round 1: Spawn review agent → review_report.md
-- [ ] Apply Round 1 fixes (if any)
-- [ ] Round 2: Verify fixes → final review_report.md
-- [ ] Deliver with any KNOWN_ISSUES documented
+- [ ] Round 1: Review → review_report.md
+- [ ] Apply fixes (if any)
+- [ ] Round 2: Verify fixes
+- [ ] Deliver
 ```
 
 ### style_contract.md Template
 
-Write this to `outputs/{project-name}/style_contract.md` in Step 1 of the Execution Protocol.
-Every sub-agent reads this file directly.
+Write this to `outputs/{project}/style_contract.md` in Step 1. **Fill in based on
+Rule 1 answers and the user's request. Do NOT copy example values blindly.**
 
 ```markdown
 # Style Contract
 
 ## Colors
-- Primary: #0078D4 (Azure Blue)
-- Background: #1B1B1B (Dark)
-- Surface: #F5F5F5 (Light Gray)
-- Accent: #50E6FF (Cyan)
-- Text: #FFFFFF on dark, #1B1B1B on light
+- Primary: {Choose based on topic — e.g., #0078D4 for Azure, #107C10 for sustainability}
+- Background: {Dark or light based on audience preference}
+- Surface: {Complementary color}
+- Accent: {Highlight color}
+- Text: {Contrast text color}
 
 ## Fonts
-- Headings: Arial, 28pt
-- Body: Segoe UI, 16pt
-- Code: Consolas, 14pt
+- Headings: {Professional font, 28pt}
+- Body: {Readable font, 16pt}
+- Code: {Monospace font if code needed, 14pt}
 
 ## Language
-- Primary: Chinese (中文)
-- Technical terms in English: Azure OpenAI, RAG, API
+- Primary: {From user's request or Rule 1 answer}
+- Technical terms: {Which terms stay in English}
 
 ## Content Density
 - Max 6 lines per slide
@@ -346,31 +340,31 @@ Example parallel dispatch — note every agent gets the **workspace path** so it
 shared files (style_contract.md, findings.md) and writes to the correct location:
 
 ```
-Slide Builder A: "Build slides 3-5 (customer challenges + solution overview + architecture).
-  Workspace: outputs/rag-demo/
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  READ findings from: outputs/rag-demo/findings.md
-  READ diagrams from: outputs/rag-demo/diagrams/
-  WRITE slides to: outputs/rag-demo/slides/slide-{N}.{pptx|html}
+Slide Builder A: "Build slides 3-5 ({actual slide titles from task_plan.md}).
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ findings from: outputs/{project}/findings.md
+  READ diagrams from: outputs/{project}/diagrams/
+  WRITE slides to: outputs/{project}/slides/slide-{N}.{pptx|html}
     → Choose format per-slide: .pptx for simple layouts, .html for complex/Chinese content
-  WRITE notes to: outputs/rag-demo/slides/slide-{N}-notes.md
+  WRITE notes to: outputs/{project}/slides/slide-{N}-notes.md
   Sub-skill: pptx/SKILL.md (for .pptx slides) or frontend-slides/SKILL.md (for .html slides)
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
-Slide Builder B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
-  Workspace: outputs/rag-demo/
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  READ findings from: outputs/rag-demo/findings.md
-  WRITE slides to: outputs/rag-demo/slides/slide-{N}.{pptx|html}
-    → Slides 7 (中文文档优化) likely .html for better CJK handling
+Slide Builder B: "Build slides 6-8 ({actual slide titles from task_plan.md}).
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ findings from: outputs/{project}/findings.md
+  WRITE slides to: outputs/{project}/slides/slide-{N}.{pptx|html}
+    → Use .html for Chinese-heavy slides, .pptx for simple layouts
   Sub-skill: pptx/SKILL.md or frontend-slides/SKILL.md
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
 Diagram Agent: "Generate architecture diagrams.
-  Workspace: outputs/rag-demo/
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  WRITE diagrams to: outputs/rag-demo/diagrams/
-  WRITE manifest to: outputs/rag-demo/diagrams/manifest.md
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  WRITE diagrams to: outputs/{project}/diagrams/
+  WRITE manifest to: outputs/{project}/diagrams/manifest.md
   Instructions: Read azure-diagrams/SKILL.md + agents/diagram-agent.md."
 ```
 
@@ -385,12 +379,12 @@ Read `agents/review-agent.md` for the full review protocol.
 ```
 Review Agent: "Review the assembled presentation for quality and consistency.
 
-  Workspace: outputs/rag-demo/
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  READ deck from: outputs/rag-demo/final/final-deck.pptx
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ deck from: outputs/{project}/final/final-deck.pptx
   Review round: 1
   Previous review: none
-  WRITE review_report.md to: outputs/rag-demo/final/review_report.md
+  WRITE review_report.md to: outputs/{project}/final/review_report.md
 
   Instructions: Read agents/review-agent.md for the full review protocol."
 ```
@@ -402,11 +396,11 @@ If the overall verdict is NEEDS_FIX, spawn the Fix Agent:
 ```
 Fix Agent: "Apply fixes from the review report.
 
-  Workspace: outputs/rag-demo/
-  READ review_report.md from: outputs/rag-demo/final/review_report.md
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  READ/WRITE deck: outputs/rag-demo/final/final-deck.pptx
-  WRITE fix_summary.md to: outputs/rag-demo/final/fix_summary.md
+  Workspace: outputs/{project}/
+  READ review_report.md from: outputs/{project}/final/review_report.md
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ/WRITE deck: outputs/{project}/final/final-deck.pptx
+  WRITE fix_summary.md to: outputs/{project}/final/fix_summary.md
 
   Instructions: Read agents/fix-agent.md for the fix protocol."
 ```
@@ -415,12 +409,12 @@ Fix Agent: "Apply fixes from the review report.
 ```
 Review Agent: "Verify that Round 1 fixes were applied correctly.
 
-  Workspace: outputs/rag-demo/
-  READ style_contract.md from: outputs/rag-demo/style_contract.md
-  READ deck from: outputs/rag-demo/final/final-deck.pptx
-  READ previous review from: outputs/rag-demo/final/review_report.md
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ deck from: outputs/{project}/final/final-deck.pptx
+  READ previous review from: outputs/{project}/final/review_report.md
   Review round: 2
-  WRITE updated review_report.md to: outputs/rag-demo/final/review_report.md
+  WRITE updated review_report.md to: outputs/{project}/final/review_report.md
 
   Instructions: Read agents/review-agent.md for the Round 2 protocol."
 ```
