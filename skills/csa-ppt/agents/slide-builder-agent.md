@@ -2,6 +2,23 @@
 
 Build one or more slides according to the Style Contract and slide specifications.
 
+## ⛔ HARD CONSTRAINT: Individual File Output
+
+**Each slide MUST be saved as a separate file: `{output_dir}/slide-{N}.{pptx|html}`.**
+
+This is a non-negotiable requirement of the pipeline. Do NOT:
+- ❌ Build all slides in a single `Presentation()` object and save once
+- ❌ Save directly to `final/` — that is the Assembly Agent's job
+- ❌ Skip writing to `slides/` for any reason
+
+The correct pattern is: **one `Presentation()` per slide → one `.save()` per slide → one file per slide in `slides/`.**
+
+After saving each slide file, you MUST verify it was written:
+```bash
+ls -la {output_dir}/slide-{N}.{pptx|html}
+```
+If the file does not exist after your save operation, diagnose and retry before continuing.
+
 ## Role
 
 The Slide Builder Agent handles individual slide creation tasks from Phase 3 (Slide-by-Slide Creation). It receives the Style Contract, slide specifications, and the target tool chain, then produces slide files that are ready for assembly. Multiple Slide Builder instances can run in parallel on different slide groups.
@@ -117,11 +134,23 @@ For each slide, self-check:
 - [ ] Images: All references resolve to actual files
 - [ ] Layout: Consistent with reference slides (if any)
 
-### Step 6: Save Slides
+### Step 6: Save Slides (One File Per Slide — MANDATORY)
 
-1. Save each slide to `{output_dir}/slide-{N}.{pptx|html}` (format chosen per Step 2)
-2. Save speaker notes alongside: `{output_dir}/slide-{N}-notes.md`
-3. Write a manifest listing what was produced — **must record the format per slide**:
+**⛔ Reminder: Each slide is a separate file. Do NOT batch all slides into one file.**
+
+1. For each slide, create a NEW `Presentation()` object, add ONE slide, then `.save()`:
+   ```python
+   # ✅ CORRECT: One Presentation per slide file
+   prs = Presentation()
+   slide_layout = prs.slide_layouts[1]
+   slide = prs.slides.add_slide(slide_layout)
+   # ... add content for slide N ...
+   prs.save(f'{output_dir}/slide-{N}.pptx')
+   ```
+2. Save each slide to `{output_dir}/slide-{N}.{pptx|html}` (format chosen per Step 2)
+3. **Verify each file was written** — run `ls -la {output_dir}/slide-{N}.*` after each save
+4. Save speaker notes alongside: `{output_dir}/slide-{N}-notes.md`
+5. Write a manifest listing what was produced — **must record the format per slide**:
 
 ```markdown
 # Slide Builder Output
@@ -141,6 +170,22 @@ For each slide, self-check:
 ```
 
 The Assembly Agent reads this manifest to know how to process each slide file.
+
+### Step 7: Final Verification (MANDATORY)
+
+After all slides are saved, run a single verification command:
+
+```bash
+echo "=== Slide Builder Verification ===" && \
+ls -la {output_dir}/slide-*.pptx {output_dir}/slide-*.html 2>/dev/null && \
+ACTUAL=$(ls {output_dir}/slide-*.pptx {output_dir}/slide-*.html 2>/dev/null | wc -l) && \
+echo "Expected: {N} slides, Found: $ACTUAL" && \
+ls {output_dir}/manifest.md
+```
+
+**If the actual count does not match the expected count, DO NOT proceed.** Identify and rebuild the missing slides.
+
+**If `manifest.md` does not exist, write it now.** The Assembly Agent requires it.
 
 ## Output Format
 

@@ -141,6 +141,24 @@ Additionally, each phase must READ the outputs of previous phases:
 
 Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
 
+**⛔ CRITICAL: Each slide MUST be saved as an INDIVIDUAL file in `slides/`.** Do NOT build all slides in a single Presentation object and save directly to `final/`. The correct pattern is:
+
+```python
+# ✅ CORRECT: One file per slide
+for n in range(1, slide_count + 1):
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    # ... build slide content ...
+    prs.save(f'outputs/{project}/slides/slide-{n}.pptx')
+
+# ❌ WRONG: All slides in one file saved to final/
+prs = Presentation()
+for n in range(1, slide_count + 1):
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    # ... build slide content ...
+prs.save(f'outputs/{project}/final/final-deck.pptx')  # FORBIDDEN — skips slides/
+```
+
 **AFTER EVERY artifact, update task_plan.md immediately:**
 
 - Each diagram → Write to `outputs/{project}/diagrams/{name}.png`
@@ -148,10 +166,13 @@ Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
   → **Append to `progress.md`**: "Diagram {name}.png generated."
 - Each slide → Write to `outputs/{project}/slides/slide-{N}.{pptx|html}`
   → Write speaker notes to `outputs/{project}/slides/slide-{N}-notes.md`
+  → **Verify the file exists**: `ls outputs/{project}/slides/slide-{N}.*`
   → **Edit `task_plan.md`**: mark this slide task `[x]`
   → **Append to `progress.md`**: "Slide N complete."
+- After ALL slides done:
+  → **Write manifest**: `outputs/{project}/slides/manifest.md` recording format per slide
+  → **Edit `task_plan.md`**: mark Phase 3 status as complete
 - After ALL diagrams done → **Edit `task_plan.md`**: mark Phase 2 status as complete
-- After ALL slides done → **Edit `task_plan.md`**: mark Phase 3 status as complete
 
 **RULE: If you are about to run a python3/node script but `task_plan.md` does not exist yet, STOP and go back to Step 1.**
 
@@ -315,7 +336,33 @@ Edit task_plan.md → mark slide task [x]
 Append to progress.md → "Slide N complete. Format: {pptx|html}."
 ```
 
-### Step 7 → Assembly (Phase 4) — ONLY after all slides and diagrams are complete
+### Step 6.5 → ⛔ MANDATORY GATE: Verify slides/ directory before assembly
+
+**This gate is a HARD CONSTRAINT. Assembly CANNOT begin until it passes.**
+
+Run this check AFTER all Phase 3 slide-building is complete and BEFORE spawning the Assembly Agent:
+
+```bash
+# Count individual slide files in slides/
+SLIDE_COUNT=$(ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null | wc -l)
+echo "Found $SLIDE_COUNT individual slide files in slides/"
+ls -la outputs/{project}/slides/
+```
+
+**Gate rules:**
+- ❌ If `slides/` is EMPTY (0 files) → **STOP. Do NOT proceed to Phase 4.** Go back to Step 6 and build individual slides. Each slide MUST be saved as a separate `slide-{N}.{pptx|html}` file.
+- ❌ If `slides/` has fewer files than expected by `task_plan.md` → **STOP.** Identify which slides are missing and build them first.
+- ❌ If `slides/manifest.md` does not exist → **STOP.** The Slide Builder Agent must write a manifest recording each slide's format.
+- ✅ Only proceed when: (a) `slides/` contains one file per planned slide, (b) `slides/manifest.md` exists, and (c) the file count matches `task_plan.md`.
+
+**⛔ CRITICAL: It is FORBIDDEN to skip this gate.** Do NOT create the final deck directly in `final/` without first producing individual slide files in `slides/`. The entire Phase 3→4 pipeline depends on intermediate files for:
+1. **Crash recovery** — if the session is interrupted, completed slides are preserved
+2. **Parallel execution** — multiple Slide Builder Agents write to independent files
+3. **Review traceability** — the Assembly Report must document which intermediate file became which final slide
+
+**If you find yourself about to create a single Presentation() object and save it directly to `final/`, you are violating this gate. STOP and restructure your approach to produce individual slide files first.**
+
+### Step 7 → Assembly (Phase 4) — ONLY after Step 6.5 gate passes
 
 Spawn the **Assembly Agent** to merge individual slides into the final deck.
 Read `agents/assembly-agent.md` for the full assembly protocol.
@@ -328,6 +375,8 @@ Assembly Agent: "Merge all slides and diagrams into the final deck.
   READ diagrams from: outputs/{project}/diagrams/
   WRITE final deck to: outputs/{project}/final/final-deck.{pptx|html}
   WRITE assembly report to: outputs/{project}/final/assembly-report.md
+  GATE CHECK: Before merging, verify slides/ contains individual slide files.
+    If slides/ is empty, ABORT and report error to orchestrator.
   Instructions: Read agents/assembly-agent.md for the assembly protocol."
 ```
 

@@ -30,6 +30,28 @@ You receive these parameters in your prompt:
 
 ## Process
 
+### Step 0: ⛔ Entry Gate — Verify slides/ Directory (MANDATORY)
+
+**Before doing ANY assembly work, verify that individual slide files exist.**
+
+Run this check FIRST:
+
+```bash
+echo "=== Assembly Agent Entry Gate ===" && \
+ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null && \
+SLIDE_COUNT=$(ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null | wc -l) && \
+echo "Individual slide files found: $SLIDE_COUNT"
+```
+
+**Gate rules:**
+- ❌ If `slides/` is EMPTY (0 slide files) → **ABORT IMMEDIATELY.** Return this error to the orchestrator:
+  > "ASSEMBLY ABORTED: slides/ directory is empty. Phase 3 (Slide Builder) must produce individual slide-{N}.{pptx|html} files before assembly can begin. Do NOT build slides directly into a final deck."
+- ❌ If `slides/manifest.md` does not exist → **ABORT.** The Slide Builder must produce a manifest.
+- ❌ If slide count < expected count from task_plan.md → **ABORT.** Report which slides are missing.
+- ✅ Only proceed to Step 1 when slides/ has the expected number of individual files AND manifest.md exists.
+
+**This gate exists because the LLM sometimes takes a shortcut by building all slides in one Presentation() object and saving directly to final/. That approach breaks crash recovery, parallel execution, and review traceability. The Assembly Agent MUST NOT work around this by building slides itself — its job is to MERGE existing files, not CREATE new content.**
+
 ### Step 1: Inventory All Artifacts
 
 1. Read each Slide Builder manifest to list all slide files **and their formats**
