@@ -14,18 +14,34 @@ description: >
 
 # CSA Presentation Skill
 
-## ⛔ MANDATORY EXECUTION SEQUENCE
+## ⛔ INVIOLABLE RULE — FILE-FIRST WORKFLOW
 
-**STOP. Before doing ANYTHING else, execute these tool calls in EXACT ORDER.**
-**Do NOT skip any step. Do NOT generate diagrams, HTML, PPTX, or any content until Step 4.**
-**Do NOT run python3, node, or any content-generation script until Step 4.**
+**THIS IS A HARD CONSTRAINT, NOT A SUGGESTION. VIOLATION = BROKEN OUTPUT.**
 
-### Step 1 → Bash tool: Create directories
+The workspace markdown files (task_plan.md, style_contract.md, findings.md) are the
+**single source of truth** for this presentation. Sub-agents READ these files. If they
+don't exist, sub-agents have no input and produce garbage.
 
-Call the Bash tool with this exact command (replace `{project}` with a short name from the user's request):
+**THEREFORE: Execute the steps below in EXACT ORDER. No reordering. No skipping.**
+
+- ❌ Running `python3` (diagrams) before task_plan.md exists = FORBIDDEN
+- ❌ Generating HTML/PPTX slides before style_contract.md exists = FORBIDDEN
+- ❌ Creating ANY content before the workspace directory exists = FORBIDDEN
+- ✅ The ONLY correct first action is: `mkdir -p outputs/{project}/...`
+
+### Step 1 → Determine project name, then create directories
+
+Derive a short, descriptive project name from the user's request content:
+- "帮我做Azure RAG方案的PPT" → `rag-demo`
+- "AKS迁移到ACA的技术分享" → `aks-to-aca`
+- "季度工作汇报" → `quarterly-report`
+
+Then call the Bash tool:
 ```bash
 mkdir -p outputs/{project}/{diagrams,slides,final}
 ```
+
+**ALL files for this presentation go under `outputs/{project}/`. No exceptions.**
 
 ### Step 2 → Write tool: Create 3 mandatory files
 
@@ -55,7 +71,25 @@ If the topic needs research (web search, Azure docs), do the research, then:
 **Call Write tool** → file_path: `outputs/{project}/findings.md`
 Content: Structured research findings (topics, key points, terminology).
 
-### Step 5 → NOW create diagrams and slides
+### Step 5 → PRE-CHECK before EVERY phase
+
+**Before starting ANY phase (diagrams, slides, assembly, review), run this check:**
+
+```bash
+ls outputs/{project}/task_plan.md outputs/{project}/style_contract.md
+```
+
+If either file is missing → STOP → go back to Step 1 and create them.
+
+Additionally, each phase must READ the outputs of previous phases:
+- Before diagrams → READ `task_plan.md` + `style_contract.md`
+- Before slides → READ `task_plan.md` + `style_contract.md` + `findings.md` + check `diagrams/`
+- Before assembly → READ `task_plan.md` + check `slides/` directory
+- Before review → READ `style_contract.md` + check `final/` directory
+
+**If a required input file does not exist, do NOT proceed. Create it first.**
+
+### Step 6 → Create diagrams and slides (ONLY after Step 5 passes)
 
 Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
 After creating EACH artifact, immediately write it to the workspace:
@@ -77,29 +111,7 @@ regularly delivers customer solution demos, internal tech deep-dives, workshop m
 and architecture reviews. They work across Chinese and English content and often receive
 templates from event organizers or HR that need to be filled with content.
 
-## How This Skill Works
-
-This skill orchestrates 5 specialized sub-skills, a planning system, and MCP integrations.
-Every presentation follows a **Plan-first, slide-by-slide execution** workflow:
-
-1. **Plan** — Break the presentation into a task plan where each slide/chapter = one task
-2. **Define Style** — Lock down colors, fonts, layout rules BEFORE any slide is created
-3. **Execute** — Complete slides one by one (or in parallel via sub-agents), checking off
-   each task as it's done
-4. **Assemble** — Combine all slides into the final deck
-5. **Review** — Spawn the review sub-agent to check quality and style consistency (max 2
-   rounds). Read `agents/review-agent.md` for the full review protocol.
-
-For simple requests (< 5 slides), the planning can be lightweight and the review step
-can be a quick self-check. For anything larger, use the full planning-with-files workflow
-and the formal review agent.
-
-## File-Based Workflow (enforced by Execution Protocol above)
-
-**All work MUST be persisted to files.** Agents communicate through files, not through
-conversation context. If it's not written to a file, it doesn't exist for the next phase.
-
-### File Contract: What Each Phase MUST Write
+## File Contract (all paths under `outputs/{project}/`)
 
 | Phase | MUST Write (output files) | MUST Read (input files) |
 |-------|--------------------------|------------------------|
@@ -114,30 +126,7 @@ conversation context. If it's not written to a file, it doesn't exist for the ne
 1. Update `task_plan.md` — mark completed items `[x]`, update phase status
 2. Append to `progress.md` — what was done, files created, any issues
 
-### Workspace Directory Structure
-
-```
-outputs/{project-name}/
-├── task_plan.md              ← Master plan with checkboxes (WRITE FIRST)
-├── progress.md               ← Session log (UPDATE AFTER EVERY STEP)
-├── style_contract.md         ← Colors, fonts, layout rules (WRITE FIRST)
-├── findings.md               ← Research results (Phase 1 output)
-├── diagrams/
-│   ├── manifest.md           ← List of diagrams generated
-│   ├── rag-architecture.png  ← Diagram images
-│   └── data-pipeline.png
-├── slides/
-│   ├── manifest.md           ← List of slides built (includes format per slide)
-│   ├── slide-1.pptx          ← Individual slide files (.pptx or .html per slide)
-│   ├── slide-1-notes.md      ← Speaker notes per slide
-│   ├── slide-2.html          ← Format chosen per-slide by content complexity
-│   └── ...
-└── final/
-    ├── final-deck.pptx       ← Assembled deck (or .html)
-    ├── assembly-report.md    ← What was assembled
-    ├── review_report.md      ← Review agent output
-    └── fix_summary.md        ← Fix agent output
-```
+All files live under `outputs/{project}/`. See README for the full directory tree.
 
 ## Templates (referenced by Execution Protocol above)
 
@@ -390,6 +379,9 @@ Review Agent: "Verify that Round 1 fixes were applied correctly.
 
 ## Decision Framework
 
+> ⛔ **PREREQUISITE**: Before using this framework, `task_plan.md` and `style_contract.md`
+> MUST already exist on disk. If they don't, go back to the Execution Sequence at the top.
+
 Analyze the request along these dimensions, then route accordingly:
 
 ### 1. What's the primary content type?
@@ -449,6 +441,9 @@ For orchestration patterns and MCP integration details, read `references/orchest
 
 ## Sub-Skill Locations
 
+> ⛔ **PREREQUISITE**: Do NOT read or invoke any sub-skill until Steps 1–4 of the
+> Execution Sequence are complete and workspace files exist on disk.
+
 These paths are relative to the skill directory:
 
 | Skill | Path | When to Read |
@@ -464,6 +459,9 @@ These paths are relative to the skill directory:
 scripts, and constraints that matter for quality output.
 
 ## Sub-Agents
+
+> ⛔ **PREREQUISITE**: Do NOT spawn any sub-agent until workspace files (task_plan.md,
+> style_contract.md, findings.md) exist on disk. Agents READ these files as input.
 
 The `agents/` directory contains instructions for specialized sub-agents. Read the
 relevant agent file before spawning it.
