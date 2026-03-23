@@ -14,11 +14,37 @@ description: >
 
 # CSA Presentation Skill
 
-## ⛔ TWO INVIOLABLE RULES
+## ⛔ THREE INVIOLABLE RULES
 
 **These are HARD CONSTRAINTS, not suggestions. Violation = broken output.**
 
-### Rule 1: FILE-FIRST — All work must be written to files
+### Rule 1: CLARIFY-BEFORE-PLAN — Ask questions when requirements are unclear
+
+**Before creating ANY plan or workspace, check if the user's request is complete enough.**
+
+If ANY of these are unknown, call the **AskUserQuestion** tool with 1–4 questions:
+
+| Must Know | Example Question |
+|-----------|-----------------|
+| Slide count | "大约需要多少页幻灯片？(5-8页 / 8-12页 / 12-20页)" |
+| Target audience | "面向的观众是？(客户决策者 / 技术团队 / 内部同事)" |
+| Language | "使用什么语言？(中文 / English / 中英混合)" |
+| Output format | "输出格式？(.pptx / HTML网页 / 两者都要)" |
+
+**Optional** (ask only if not obvious from context):
+- Visual style preference (professional / technical / workshop)
+- Whether to include architecture diagrams
+- Whether a template is provided
+- Key messages or must-include content
+
+**Rules for asking:**
+- ❌ Do NOT ask if the user already specified it (e.g., "做一个10页的PPT" → slide count is known)
+- ❌ Do NOT ask more than 4 questions — infer the rest from context
+- ❌ Do NOT start `mkdir` or any work before questions are answered
+- ✅ Ask ALL questions in ONE AskUserQuestion call, not multiple rounds
+- ✅ If the request is very detailed, skip directly to Step 1
+
+### Rule 2: FILE-FIRST — All work must be written to files
 
 The workspace markdown files (task_plan.md, style_contract.md, findings.md) are the
 **single source of truth**. Sub-agents READ these files. If they don't exist, sub-agents
@@ -29,7 +55,7 @@ have no input and produce garbage.
 - ❌ Creating ANY content before the workspace directory exists = FORBIDDEN
 - ✅ The ONLY correct first action is: `mkdir -p outputs/{project}/...`
 
-### Rule 2: UPDATE-AFTER-EVERY-TASK — Enable resume from interruption
+### Rule 3: UPDATE-AFTER-EVERY-TASK — Enable resume from interruption
 
 **After completing ANY task (research, diagram, slide, assembly, review), IMMEDIATELY
 update `task_plan.md` to mark that task `[x]`.**
@@ -47,7 +73,7 @@ This is critical because:
 
 **THEREFORE: Execute the steps below in EXACT ORDER. No reordering. No skipping.**
 
-### Step 1 → Determine project name, then create directories
+### Step 1 → Determine project name, then create directories (ONLY after Rule 1 questions are answered)
 
 Derive a short, descriptive project name from the user's request content:
 - "帮我做Azure RAG方案的PPT" → `rag-demo`
