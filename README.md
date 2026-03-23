@@ -25,8 +25,8 @@ decides based on deck size and complexity:
 |-------|-------|------|-----------------|
 | **Research Agent** | Phase 1 | Gathers Azure docs, features, case studies, industry context | Topics need web research |
 | **Diagram Agent** | Phase 2 | Generates architecture diagrams and technical visuals | Deck includes architecture diagrams |
-| **Slide Builder Agent** | Phase 3 | Builds individual slides per the Style Contract (parallelizable) | Large decks (10+ slides) |
-| **Assembly Agent** | Phase 4 | Merges slides + diagrams into final deck | Multiple builders produced separate files |
+| **Slide Builder Agent** | Phase 3 | Builds individual slides, smart format selection per slide (parallelizable) | Large decks (10+ slides) |
+| **Assembly Agent** | Phase 4 | Normalizes mixed formats + merges slides + diagrams into final deck | Multiple builders produced separate files |
 | **Review Agent** | Phase 5 | Quality review across 7 dimensions, max 2 rounds | Always for 5+ slide decks |
 | **Fix Agent** | Phase 5 | Applies targeted fixes from the review report | Review found issues |
 
@@ -50,8 +50,24 @@ Each presentation follows a **5-phase workflow**:
 1. **Plan** — Break the deck into tasks (one per slide/chapter)
 2. **Define Style** — Lock colors, fonts, layout rules into a Style Contract
 3. **Execute** — Research + diagrams + slides (parallel where possible)
-4. **Assemble** — Combine into final .pptx or HTML
+4. **Assemble** — Normalize mixed intermediate formats + combine into final .pptx or HTML
 5. **Review & Fix** — Independent quality check + fix loop (max 2 rounds)
+
+### Smart Intermediate Format Selection
+
+Slide Builder Agents **choose the best intermediate format per-slide** based on content — not
+forced to match the final output format:
+
+| Content | Intermediate Format | Why |
+|---------|-------------------|-----|
+| Simple bullets, English content | `.pptx` (python-pptx) | Direct, no conversion overhead |
+| Diagram-only slides | `.pptx` (python-pptx) | Simple image embed |
+| Chinese-heavy (中文为主) | `.html` | Better CJK font rendering |
+| Code blocks with syntax highlighting | `.html` | Native code rendering |
+| Complex multi-column layouts | `.html` | CSS flexbox/grid flexibility |
+
+The Assembly Agent handles the format mix — normalizing all slides to the target format
+before merging into the final deck.
 
 ## Supported Scenarios
 
@@ -87,10 +103,11 @@ Just describe what you need in natural language:
 
 The **csa-ppt** skill will automatically:
 1. Analyze your request (content type, language, format)
-2. Choose the best tool chain
-3. Dispatch sub-agents as needed based on deck size
-4. Review the assembled deck for quality
-5. Apply fixes and deliver
+2. Initialize a file-based workspace (`outputs/{project}/`)
+3. Choose the best tool chain and intermediate format per slide
+4. Dispatch sub-agents as needed based on deck size
+5. Assemble, normalizing any mixed intermediate formats
+6. Review the assembled deck for quality and apply fixes
 
 ## Project Structure
 
