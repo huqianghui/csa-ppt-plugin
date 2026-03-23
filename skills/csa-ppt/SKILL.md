@@ -1,18 +1,25 @@
 ---
 name: csa-ppt
 description: >
-  Unified presentation skill for Azure Cloud Solution Architects. Orchestrates multiple
+  Unified presentation skill for Cloud Solution Architects. Orchestrates multiple
   specialized tools to create professional presentations, architecture diagrams, and
   technical content. Use this skill whenever the user mentions: creating slides, PPT,
   presentations, deck, 演示文稿, 幻灯片, architecture diagrams for slides, filling
   templates, customer demos, tech sharing, workshops, or any combination of diagrams +
   slides. Also trigger when the user provides a .pptx template to fill, asks to visualize
-  Azure architectures in a presentation context, or needs Chinese-language slide content.
-  This skill covers ALL presentation-related work — from a quick internal deck to a
-  polished customer-facing solution demo with architecture diagrams.
+  cloud architectures (Azure, AWS, GCP, multi-cloud) in a presentation context, or needs
+  Chinese-language slide content. This skill covers ALL presentation-related work — from
+  a quick internal deck to a polished customer-facing solution demo with architecture
+  diagrams.
 ---
 
 # CSA Presentation Skill
+
+You are helping a Cloud Solution Architect create presentations. This person
+regularly delivers customer solution demos, internal tech deep-dives, workshop materials,
+and architecture reviews. Content may cover Azure, AWS, GCP, multi-cloud, or hybrid
+scenarios. They work across Chinese and English content and often receive templates from
+event organizers or HR that need to be filled with content.
 
 ## ⛔ THREE INVIOLABLE RULES
 
@@ -38,11 +45,11 @@ If ANY of these are unknown, call the **AskUserQuestion** tool with 1–4 questi
 - Key messages or must-include content
 
 **Rules for asking:**
-- ❌ Do NOT ask if the user already specified it (e.g., "做一个10页的PPT" → slide count is known)
-- ❌ Do NOT ask more than 4 questions — infer the rest from context
-- ❌ Do NOT start `mkdir` or any work before questions are answered
-- ✅ Ask ALL questions in ONE AskUserQuestion call, not multiple rounds
-- ✅ If the request is very detailed, skip directly to Step 1
+- Do NOT ask if the user already specified it (e.g., "做一个10页的PPT" → slide count is known)
+- Do NOT ask more than 4 questions — infer the rest from context
+- Do NOT start `mkdir` or any work before questions are answered
+- Ask ALL questions in ONE AskUserQuestion call, not multiple rounds
+- If the request is very detailed, skip directly to Step 0
 
 ### Rule 2: FILE-FIRST — All work must be written to files
 
@@ -50,10 +57,10 @@ The workspace markdown files (task_plan.md, style_contract.md, findings.md) are 
 **single source of truth**. Sub-agents READ these files. If they don't exist, sub-agents
 have no input and produce garbage.
 
-- ❌ Running `python3` (diagrams) before task_plan.md exists = FORBIDDEN
-- ❌ Generating HTML/PPTX slides before style_contract.md exists = FORBIDDEN
-- ❌ Creating ANY content before the workspace directory exists = FORBIDDEN
-- ✅ The ONLY correct first action is: `mkdir -p outputs/{project}/...`
+- Running `python3` (diagrams) before task_plan.md exists = FORBIDDEN
+- Generating HTML/PPTX slides before style_contract.md exists = FORBIDDEN
+- Creating ANY content before the workspace directory exists = FORBIDDEN
+- The ONLY correct first action is: `mkdir -p outputs/{project}/...`
 
 ### Rule 3: UPDATE-AFTER-EVERY-TASK — Enable resume from interruption
 
@@ -71,55 +78,136 @@ This is critical because:
 3. Find the first unchecked `[ ]` task → continue from there
 4. Do NOT redo tasks already marked `[x]`
 
+---
+
+## How This Skill Works
+
+This skill orchestrates 5 specialized sub-skills and MCP integrations.
+Every presentation follows a **Plan-first, slide-by-slide execution** workflow:
+
+1. **Plan** — Break the presentation into a task plan where each slide/chapter = one task
+2. **Define Style** — Lock down colors, fonts, layout rules BEFORE any slide is created
+3. **Execute** — Complete slides one by one (or in parallel via sub-agents), checking off
+   each task as it's done
+4. **Assemble** — Combine all slides into the final deck
+5. **Review** — Spawn the review sub-agent to check quality and style consistency (max 2
+   rounds). Read `agents/review-agent.md` for the full review protocol.
+
+### Scaling by Complexity
+
+| Request Size | Planning | Workspace | Review |
+|-------------|---------|-----------|--------|
+| Simple (< 5 slides) | Single `task_plan.md` that includes style rules inline | Flat `outputs/{project}/` dir, no subdirs required | Quick self-check, no formal review agent |
+| Standard (5-10 slides) | Full workspace with `task_plan.md` + `style_contract.md` + `progress.md` | Full directory structure with `diagrams/`, `slides/`, `final/` | Formal review agent, 1 round |
+| Large (10+ slides) | Full workspace + parallel sub-agent dispatch | Full directory structure | Formal review agent, up to 2 rounds |
+
+---
+
+## CRITICAL: File-Based Workflow
+
+**All work MUST be persisted to files.** Agents communicate through files, not through
+conversation context. If it's not written to a file, it doesn't exist for the next phase.
+
 **THEREFORE: Execute the steps below in EXACT ORDER. No reordering. No skipping.**
 
-### Step 1 → Determine project name, then create directories (ONLY after Rule 1 questions are answered)
+### Step 0: Initialize Workspace (ONLY after Rule 1 questions are answered)
 
 Derive a short, descriptive project name from the user's request content:
 - "帮我做Azure RAG方案的PPT" → `rag-demo`
 - "AKS迁移到ACA的技术分享" → `aks-to-aca`
 - "季度工作汇报" → `quarterly-report`
 
-Then call the Bash tool:
+**For standard/large requests (5+ slides):**
+
 ```bash
-mkdir -p outputs/{project}/{diagrams,slides,final}
+mkdir -p outputs/{project-name}/{diagrams,slides,final}
 ```
 
-**ALL files for this presentation go under `outputs/{project}/`. No exceptions.**
+Then write these 3 files using the Write tool:
 
-### Step 2 → Write tool: Create 3 mandatory files
+1. **`task_plan.md`** — The master plan (see `references/templates.md` for template)
+2. **`progress.md`** — Session log, updated after each step
+3. **`style_contract.md`** — Standalone style rules for sub-agents to read
 
-Call the Write tool 3 times in sequence. These files MUST exist before ANY other work.
+**For simple requests (< 5 slides):**
 
-**Call Write tool** → file_path: `outputs/{project}/task_plan.md`
-Content: The slide plan with checkboxes. Use the task_plan.md template below.
+```bash
+mkdir -p outputs/{project-name}
+```
 
-**Call Write tool** → file_path: `outputs/{project}/style_contract.md`
-Content: Colors, fonts, language, density rules. Use the style_contract.md template below.
+Write a single **`task_plan.md`** with style rules included inline (see the lightweight
+variant in `references/templates.md`). No separate `style_contract.md` or `progress.md`
+needed — the orchestrator tracks progress directly.
 
-**Call Write tool** → file_path: `outputs/{project}/progress.md`
-Content: `# Progress Log\n\n## Workspace initialized\n- task_plan.md created\n- style_contract.md created`
+### Step 0.5: CHECKPOINT — Verify files exist
 
-### Step 3 → CHECKPOINT: Verify files exist
-
-Call the Bash tool:
 ```bash
 ls -la outputs/{project}/task_plan.md outputs/{project}/style_contract.md outputs/{project}/progress.md
 ```
-If ANY file is missing, go back to Step 2. **Do NOT proceed until all 3 files are confirmed.**
+If ANY file is missing, go back to Step 0. **Do NOT proceed until all files are confirmed.**
 
-### Step 4 → Research (if needed) → Write findings to file
+### Workspace Directory Structure
 
-If the topic needs research (web search, Azure docs), do the research, then:
+```
+outputs/{project-name}/
+├── task_plan.md              ← Master plan with checkboxes
+├── progress.md               ← Session log (5+ slides only)
+├── style_contract.md         ← Colors, fonts, layout rules (5+ slides only)
+├── findings.md               ← Research results (Phase 1 output)
+├── diagrams/
+│   ├── manifest.md           ← List of diagrams generated
+│   └── *.png                 ← Diagram images
+├── slides/
+│   ├── manifest.md           ← List of slides built (format per slide)
+│   ├── slide-{N}.{pptx|html} ← Individual slide files
+│   └── slide-{N}-notes.md    ← Speaker notes per slide
+└── final/
+    ├── final-deck.{pptx|html}← Assembled deck
+    ├── assembly-report.md    ← What was assembled
+    ├── review_report.md      ← Review agent output
+    └── fix_summary.md        ← Fix agent output
+```
+
+**After completing EACH phase:**
+1. Update `task_plan.md` — mark completed items `[x]`, update phase status
+2. Append to `progress.md` — what was done, files created, any issues
+
+---
+
+## Planning Workflow
+
+Before creating any presentation, initialize the workspace (Step 0 above), then create
+the plan. See `references/templates.md` for full task_plan and style_contract templates.
+
+### Step 1: Create the Slide Plan
+
+After understanding the user's request, **write** `task_plan.md` to disk with one task
+per slide or logical chapter. The plan must include:
+
+- **Goal**: One-sentence summary of the presentation
+- **Style Contract**: Color palette, fonts, language, density rules, output format
+- **Phases**: Research → Diagrams → Slides → Assembly → Review, each with checkboxes
+
+### Step 2: Lock the Style Contract
+
+For 5+ slide decks, **write `style_contract.md`** as a standalone file so every sub-agent
+can read it directly without parsing task_plan.md. See `references/templates.md` for the
+template.
+
+**Every sub-agent prompt must include**: "Read `style_contract.md` at
+`outputs/{project-name}/style_contract.md` for all styling rules."
+
+### Step 3: Research (if needed) → Write findings to file
+
+If the topic needs research (web search, cloud docs), do the research, then:
 
 **Call Write tool** → file_path: `outputs/{project}/findings.md`
-Content: Structured research findings (topics, key points, terminology).
 
-**Then immediately update task_plan.md:**
-**Call Edit tool** → mark Phase 1 research tasks as `[x]` in `outputs/{project}/task_plan.md`
-**Call Edit tool** → append to `outputs/{project}/progress.md`: "Phase 1 complete. findings.md written."
+**Then immediately update task_plan.md** (Rule 3):
+- Mark Phase 1 research tasks as `[x]`
+- Append to `progress.md`: "Phase 1 complete. findings.md written."
 
-### Step 5 → PRE-CHECK before EVERY phase
+### Step 4: PRE-CHECK before EVERY phase
 
 **Before starting ANY phase (diagrams, slides, assembly, review), run this check:**
 
@@ -127,7 +215,7 @@ Content: Structured research findings (topics, key points, terminology).
 ls outputs/{project}/task_plan.md outputs/{project}/style_contract.md
 ```
 
-If either file is missing → STOP → go back to Step 1 and create them.
+If either file is missing → STOP → go back to Step 0 and create them.
 
 Additionally, each phase must READ the outputs of previous phases:
 - Before diagrams → READ `task_plan.md` + `style_contract.md`
@@ -137,365 +225,105 @@ Additionally, each phase must READ the outputs of previous phases:
 
 **If a required input file does not exist, do NOT proceed. Create it first.**
 
-### Step 6 → Create diagrams and slides (ONLY after Step 5 passes)
+### Step 5: Create diagrams and slides
 
 Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
 
-**⛔ CRITICAL: Each slide MUST be saved as an INDIVIDUAL file in `slides/`.** Do NOT build all slides in a single Presentation object and save directly to `final/`. The correct pattern is:
+**⛔ CRITICAL: Each slide MUST be saved as an INDIVIDUAL file in `slides/`.** Do NOT build
+all slides in a single Presentation object and save directly to `final/`. The correct
+pattern is:
 
 ```python
-# ✅ CORRECT: One file per slide
+# CORRECT: One file per slide
 for n in range(1, slide_count + 1):
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[1])
     # ... build slide content ...
     prs.save(f'outputs/{project}/slides/slide-{n}.pptx')
 
-# ❌ WRONG: All slides in one file saved to final/
-prs = Presentation()
-for n in range(1, slide_count + 1):
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    # ... build slide content ...
-prs.save(f'outputs/{project}/final/final-deck.pptx')  # FORBIDDEN — skips slides/
+# WRONG: All slides in one file saved to final/
+# prs = Presentation()
+# for n in range(...): prs.slides.add_slide(...)
+# prs.save('outputs/{project}/final/final-deck.pptx')  # FORBIDDEN
 ```
 
-**AFTER EVERY artifact, update task_plan.md immediately:**
+**AFTER EVERY artifact, update task_plan.md immediately** (Rule 3).
 
-- Each diagram → Write to `outputs/{project}/diagrams/{name}.png`
-  → **Edit `task_plan.md`**: mark this diagram task `[x]`
-  → **Append to `progress.md`**: "Diagram {name}.png generated."
-- Each slide → Write to `outputs/{project}/slides/slide-{N}.{pptx|html}`
-  → Write speaker notes to `outputs/{project}/slides/slide-{N}-notes.md`
-  → **Verify the file exists**: `ls outputs/{project}/slides/slide-{N}.*`
-  → **Edit `task_plan.md`**: mark this slide task `[x]`
-  → **Append to `progress.md`**: "Slide N complete."
-- After ALL slides done:
-  → **Write manifest**: `outputs/{project}/slides/manifest.md` recording format per slide
-  → **Edit `task_plan.md`**: mark Phase 3 status as complete
-- After ALL diagrams done → **Edit `task_plan.md`**: mark Phase 2 status as complete
-
-**RULE: If you are about to run a python3/node script but `task_plan.md` does not exist yet, STOP and go back to Step 1.**
-
----
-
-## Context
-
-You are helping an Azure Cloud Solution Architect create presentations. This person
-regularly delivers customer solution demos, internal tech deep-dives, workshop materials,
-and architecture reviews. They work across Chinese and English content and often receive
-templates from event organizers or HR that need to be filled with content.
-
-## File Contract (all paths under `outputs/{project}/`)
-
-| Phase | MUST Write (output files) | MUST Read (input files) |
-|-------|--------------------------|------------------------|
-| Phase 0: Init | `task_plan.md`, `progress.md`, `style_contract.md` | — |
-| Phase 1: Research (if needed) | `findings.md` | `task_plan.md` |
-| Phase 2: Diagrams | `diagrams/*.png`, `diagrams/manifest.md` | `task_plan.md`, `style_contract.md` |
-| Phase 3: Slides | `slides/slide-{N}.{pptx\|html}`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md` (if exists), `diagrams/` |
-| Phase 4: Assembly | `final/final-deck.{pptx\|html}`, `final/assembly-report.md` | `slides/`, `diagrams/`, `task_plan.md` |
-| Phase 5: Review | `final/review_report.md`, `final/fix_summary.md` | `final/final-deck.*`, `style_contract.md` |
-
-**After completing EACH phase:**
-1. Update `task_plan.md` — mark completed items `[x]`, update phase status
-2. Append to `progress.md` — what was done, files created, any issues
-
-All files live under `outputs/{project}/`. See README for the full directory tree.
-
-## Templates (referenced by Execution Protocol above)
-
-For 5+ slides, also read `planning-with-files/SKILL.md` for the full system.
-
-### task_plan.md Template
-
-Write this to `outputs/{project}/task_plan.md` in Step 1. **Replace ALL placeholders
-with content from the user's ACTUAL request. Do NOT copy the example text verbatim.**
-
-```markdown
-## Goal
-{Describe the actual presentation goal based on user's request}
-
-## Style Contract
-- **Color palette**: {Choose appropriate colors for the topic}
-- **Font**: {Choose appropriate fonts}
-- **Language**: {Language from Rule 1 answers or user's request}
-- **Layout rules**: Max 6 lines per slide, max 8 words per bullet
-- **Diagram style**: {If diagrams needed, describe style}
-- **Output format**: {Format from Rule 1 answers or user's request}
-
-## Phases
-
-### Phase 1: Research & Content Preparation
-**Status:** pending
-- [ ] {Research task 1 based on actual topic}
-- [ ] {Research task 2}
-- [ ] Save findings to findings.md
-
-### Phase 2: Diagram Generation
-**Status:** pending
-- [ ] {Diagram 1 based on actual content needs}
-- [ ] {Diagram 2 if needed}
-
-### Phase 3: Slide-by-Slide Creation
-**Status:** pending
-- [ ] Slide 1: {Actual title from user's topic}
-- [ ] Slide 2: {Actual slide content}
-- [ ] ...{One line per slide, based on Rule 1 answers for slide count}
-
-### Phase 4: Assembly
-**Status:** pending
-- [ ] Assemble all slides into final deck
-- [ ] Add speaker notes
-- [ ] Verify file opens correctly
-
-### Phase 5: Review & Fix (max 2 rounds)
-**Status:** pending
-- [ ] Round 1: Review → review_report.md
-- [ ] Apply fixes (if any)
-- [ ] Round 2: Verify fixes
-- [ ] Deliver
-```
-
-### style_contract.md Template
-
-Write this to `outputs/{project}/style_contract.md` in Step 1. **Fill in based on
-Rule 1 answers and the user's request. Do NOT copy example values blindly.**
-
-```markdown
-# Style Contract
-
-## Colors
-- Primary: {Choose based on topic — e.g., #0078D4 for Azure, #107C10 for sustainability}
-- Background: {Dark or light based on audience preference}
-- Surface: {Complementary color}
-- Accent: {Highlight color}
-- Text: {Contrast text color}
-
-## Fonts
-- Headings: {Professional font, 28pt}
-- Body: {Readable font, 16pt}
-- Code: {Monospace font if code needed, 14pt}
-
-## Language
-- Primary: {From user's request or Rule 1 answer}
-- Technical terms: {Which terms stay in English}
-
-## Content Density
-- Max 6 lines per slide
-- Max 8 words per bullet (Chinese: 15 characters)
-- Overflow → speaker notes
-
-## Diagram Colors
-- Azure services: #0078D4
-- Data flow: #50E6FF
-- External systems: #FF8C00
-
-## Output Format
-- Tool chain: pptx via html2pptx
-- Image resolution: 300 DPI / 2x scale
-```
-
-**Every sub-agent prompt must include**: "Read `style_contract.md` at
-`outputs/{project}/style_contract.md` for all styling rules."
-
-### Per-Phase File Write Commands
-
-After completing each task, use these exact commands:
-
-**Phase 1 — Research:**
-```
-# After research is done, WRITE to disk:
-Write findings.md → outputs/{project}/findings.md
-Edit task_plan.md → mark research tasks [x]
-Append to progress.md → "Phase 1 complete. findings.md written with N topics."
-```
-
-**Phase 2 — Diagrams:**
-```
-# After each diagram is generated, WRITE to disk:
-Save PNG → outputs/{project}/diagrams/{name}.png
-Write manifest → outputs/{project}/diagrams/manifest.md
-Edit task_plan.md → mark diagram tasks [x]
-Append to progress.md → "Phase 2 complete. N diagrams saved to diagrams/."
-```
-
-**Phase 3 — Slides:**
-
-Each sub-agent **chooses the intermediate format per-slide** based on content:
-- **Use .pptx** (via python-pptx) for: simple layouts, English-only content, standard bullet slides
-- **Use .html** for: complex layouts, Chinese-heavy content, code blocks, rich formatting
-
-The Assembly Agent handles mixed formats during merge.
-
-```
-# After each slide is built, WRITE to disk:
-Save slide → outputs/{project}/slides/slide-{N}.{pptx|html}  (format chosen by content)
-Save notes → outputs/{project}/slides/slide-{N}-notes.md
-Write manifest → outputs/{project}/slides/manifest.md  (must record format per slide)
-Edit task_plan.md → mark slide task [x]
-Append to progress.md → "Slide N complete. Format: {pptx|html}."
-```
-
-### Step 6.5 → ⛔ MANDATORY GATE: Verify slides/ directory before assembly
+### Step 5.5: ⛔ MANDATORY GATE — Verify slides/ before assembly
 
 **This gate is a HARD CONSTRAINT. Assembly CANNOT begin until it passes.**
 
-Run this check AFTER all Phase 3 slide-building is complete and BEFORE spawning the Assembly Agent:
-
 ```bash
-# Count individual slide files in slides/
 SLIDE_COUNT=$(ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null | wc -l)
 echo "Found $SLIDE_COUNT individual slide files in slides/"
 ls -la outputs/{project}/slides/
 ```
 
 **Gate rules:**
-- ❌ If `slides/` is EMPTY (0 files) → **STOP. Do NOT proceed to Phase 4.** Go back to Step 6 and build individual slides. Each slide MUST be saved as a separate `slide-{N}.{pptx|html}` file.
-- ❌ If `slides/` has fewer files than expected by `task_plan.md` → **STOP.** Identify which slides are missing and build them first.
-- ❌ If `slides/manifest.md` does not exist → **STOP.** The Slide Builder Agent must write a manifest recording each slide's format.
-- ✅ Only proceed when: (a) `slides/` contains one file per planned slide, (b) `slides/manifest.md` exists, and (c) the file count matches `task_plan.md`.
+- If `slides/` is EMPTY (0 files) → **STOP.** Go back to Step 5 and build individual slides.
+- If `slides/` has fewer files than expected by `task_plan.md` → **STOP.** Build the missing slides first.
+- If `slides/manifest.md` does not exist → **STOP.** Write the manifest first.
+- Only proceed when: (a) `slides/` contains one file per planned slide, (b) `slides/manifest.md` exists, and (c) the file count matches `task_plan.md`.
 
-**⛔ CRITICAL: It is FORBIDDEN to skip this gate.** Do NOT create the final deck directly in `final/` without first producing individual slide files in `slides/`. The entire Phase 3→4 pipeline depends on intermediate files for:
-1. **Crash recovery** — if the session is interrupted, completed slides are preserved
-2. **Parallel execution** — multiple Slide Builder Agents write to independent files
-3. **Review traceability** — the Assembly Report must document which intermediate file became which final slide
+**If you find yourself about to create a single Presentation() object and save it directly
+to `final/`, you are violating this gate. STOP and restructure.**
 
-**If you find yourself about to create a single Presentation() object and save it directly to `final/`, you are violating this gate. STOP and restructure your approach to produce individual slide files first.**
-
-### Step 7 → Assembly (Phase 4) — ONLY after Step 6.5 gate passes
+### Step 6: Assembly (Phase 4) — ONLY after Step 5.5 gate passes
 
 Spawn the **Assembly Agent** to merge individual slides into the final deck.
 Read `agents/assembly-agent.md` for the full assembly protocol.
 
-```
-Assembly Agent: "Merge all slides and diagrams into the final deck.
-  Workspace: outputs/{project}/
-  READ task_plan.md from: outputs/{project}/task_plan.md
-  READ slides from: outputs/{project}/slides/
-  READ diagrams from: outputs/{project}/diagrams/
-  WRITE final deck to: outputs/{project}/final/final-deck.{pptx|html}
-  WRITE assembly report to: outputs/{project}/final/assembly-report.md
-  GATE CHECK: Before merging, verify slides/ contains individual slide files.
-    If slides/ is empty, ABORT and report error to orchestrator.
-  Instructions: Read agents/assembly-agent.md for the assembly protocol."
-```
-
 **After assembly:**
-**Call Edit tool** → mark Phase 4 tasks as `[x]` in `outputs/{project}/task_plan.md`
-**Append to `progress.md`**: "Phase 4 complete. Final deck assembled."
+- Mark Phase 4 tasks as `[x]` in task_plan.md
+- Append to `progress.md`: "Phase 4 complete. Final deck assembled."
 
-### Step 8 → Review & Fix (Phase 5) — ONLY after assembly is complete
+### Step 7: Review & Fix (Phase 5) — ONLY after assembly is complete
 
 Read `agents/review-agent.md` for the full review protocol. Max 2 rounds.
 
-**Round 1 — Full Review:**
-```
-Review Agent: "Review the assembled presentation for quality and consistency.
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ deck from: outputs/{project}/final/final-deck.{pptx|html}
-  Review round: 1
-  WRITE review_report.md to: outputs/{project}/final/review_report.md
-  Instructions: Read agents/review-agent.md for the full review protocol."
-```
-
-**Apply Fixes (if verdict is NEEDS_FIX):**
-```
-Fix Agent: "Apply fixes from the review report.
-  Workspace: outputs/{project}/
-  READ review_report.md from: outputs/{project}/final/review_report.md
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ/WRITE deck: outputs/{project}/final/final-deck.{pptx|html}
-  WRITE fix_summary.md to: outputs/{project}/final/fix_summary.md
-  Instructions: Read agents/fix-agent.md for the fix protocol."
-```
-
-**Round 2 — Verify Fixes:**
-```
-Review Agent: "Verify Round 1 fixes were applied correctly.
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ deck from: outputs/{project}/final/final-deck.{pptx|html}
-  READ previous review from: outputs/{project}/final/review_report.md
-  Review round: 2
-  WRITE updated review_report.md to: outputs/{project}/final/review_report.md
-  Instructions: Read agents/review-agent.md for the Round 2 protocol."
-```
-
-**After review:**
-- If PASS → deliver the deck
-- If NEEDS_FIX after Round 2 → mark remaining as KNOWN_ISSUES, deliver with report
+- **Round 1 — Full Review**: Spawn Review Agent → writes `review_report.md`
+- **Apply Fixes (if NEEDS_FIX)**: Spawn Fix Agent → writes `fix_summary.md`
+- **Round 2 — Verify Fixes**: Spawn Review Agent again (Round 2 mode)
+- After Round 2: PASS → deliver; NEEDS_FIX → mark as KNOWN_ISSUES, deliver with report
 - Do NOT loop a third time
-- **Call Edit tool** → mark Phase 5 tasks as `[x]` in `outputs/{project}/task_plan.md`
-- **Append to `progress.md`**: "Phase 5 complete. Review verdict: {PASS|NEEDS_FIX}."
+
+### Step 8: Parallel Execution (10+ slides, optional)
+
+For large presentations, use multiple sub-agents to build different chapters simultaneously.
+
+**Can parallelize:** Independent content chapters, diagram generation, research tasks.
+**Must be sequential:** Title/agenda (first), final assembly (last).
+
+Each sub-agent MUST receive in its prompt:
+1. The **workspace_path** (e.g., `outputs/rag-demo/`)
+2. Instruction to **read `style_contract.md`** from the workspace
+3. The **sub-skill path** to read (e.g., `../pptx/SKILL.md`)
+4. The **agent instructions** to read (e.g., `agents/slide-builder-agent.md`)
 
 ---
 
-### Guidance: Parallel Execution (Optional, for 10+ slides)
+## Incremental Update Workflow
 
-For large presentations (10+ slides), you can use multiple sub-agents to build different
-chapters simultaneously. The key rules for parallel execution:
+When the user wants to modify an existing presentation (e.g., "改一下第5页"):
 
-**What to parallelize:**
-- Independent content chapters (e.g., "Security" and "Cost Optimization" slides)
-- Diagram generation (can run alongside slide creation)
-- Research tasks (web search for different topics)
+1. **Read** the existing workspace files (`task_plan.md`, `style_contract.md`)
+2. **Identify** which slides/phases are affected
+3. **Re-execute** only the affected phases:
+   - Content change on one slide → re-run Phase 3 for that slide only
+   - New diagram needed → re-run Phase 2 for that diagram, then Phase 3 for embedding
+   - Style change → update `style_contract.md`, re-run Phase 3 for all slides
+4. **Re-assemble** (Phase 4) — always needed after any slide change
+5. **Quick self-check** instead of formal review (unless the change is large)
+6. Update `progress.md` with what was changed
 
-**What must be sequential:**
-- Title slide and agenda (created first, defines the structure)
-- Final assembly and verification (created last)
+Do NOT re-run the full 5-phase pipeline for incremental changes.
 
-**How to keep style consistent across sub-agents:**
-Each sub-agent MUST receive:
-1. The **Style Contract** from the plan (colors, fonts, layout rules)
-2. The **output format** and tool chain to use
-3. A reference to any already-completed slides for visual consistency
-4. The same sub-skill SKILL.md instructions
-
-Example parallel dispatch — note every agent gets the **workspace path** so it reads
-shared files (style_contract.md, findings.md) and writes to the correct location:
-
-```
-Slide Builder A: "Build slides 3-5 ({actual slide titles from task_plan.md}).
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ findings from: outputs/{project}/findings.md
-  READ diagrams from: outputs/{project}/diagrams/
-  WRITE slides to: outputs/{project}/slides/slide-{N}.{pptx|html}
-    → Choose format per-slide: .pptx for simple layouts, .html for complex/Chinese content
-  WRITE notes to: outputs/{project}/slides/slide-{N}-notes.md
-  Sub-skill: pptx/SKILL.md (for .pptx slides) or frontend-slides/SKILL.md (for .html slides)
-  Instructions: Read agents/slide-builder-agent.md for the build protocol."
-
-Slide Builder B: "Build slides 6-8 ({actual slide titles from task_plan.md}).
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ findings from: outputs/{project}/findings.md
-  WRITE slides to: outputs/{project}/slides/slide-{N}.{pptx|html}
-    → Use .html for Chinese-heavy slides, .pptx for simple layouts
-  Sub-skill: pptx/SKILL.md or frontend-slides/SKILL.md
-  Instructions: Read agents/slide-builder-agent.md for the build protocol."
-
-Diagram Agent: "Generate architecture diagrams.
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  WRITE diagrams to: outputs/{project}/diagrams/
-  WRITE manifest to: outputs/{project}/diagrams/manifest.md
-  Instructions: Read azure-diagrams/SKILL.md + agents/diagram-agent.md."
-```
-
-After all sub-agents complete, assemble into the final deck in Phase 4.
-
-### Guidance: Review Details
-
-See Step 8 above for the review and fix protocol. Key points:
-- Max 2 review rounds
-- After Round 2, remaining issues become KNOWN_ISSUES — the user decides what to fix manually
+---
 
 ## Decision Framework
 
 > ⛔ **PREREQUISITE**: Before using this framework, `task_plan.md` and `style_contract.md`
-> MUST already exist on disk. If they don't, go back to the Execution Sequence at the top.
+> MUST already exist on disk. If they don't, go back to Step 0.
 
 Analyze the request along these dimensions, then route accordingly:
 
@@ -503,7 +331,7 @@ Analyze the request along these dimensions, then route accordingly:
 
 | Content | Best Tool | Why |
 |---------|-----------|-----|
-| Azure architecture diagram | **azure-diagrams** | 700+ official Azure icons, professional layout |
+| Cloud architecture diagram (Azure, AWS, GCP) | **azure-diagrams** | 700+ official cloud icons, professional layout |
 | Hand-drawn / conceptual diagram | **excalidraw-diagram** | Whiteboard aesthetic, great for brainstorming visuals |
 | Swimlane / business process flow | **azure-diagrams** (matplotlib) | Built-in swimlane support |
 | Sequence / auth flow | **azure-diagrams** | Dedicated sequence diagram patterns |
@@ -553,22 +381,22 @@ Read the appropriate reference file for the scenario at hand:
 | Template Fill | `references/workflow-template-fill.md` | Analyze template → Map → Fill → Verify |
 
 For orchestration patterns and MCP integration details, read `references/orchestration-and-mcp.md`.
+For task plan and style contract templates, read `references/templates.md`.
 
 ## Sub-Skill Locations
 
-> ⛔ **PREREQUISITE**: Do NOT read or invoke any sub-skill until Steps 1–4 of the
-> Execution Sequence are complete and workspace files exist on disk.
+> ⛔ **PREREQUISITE**: Do NOT read or invoke any sub-skill until Steps 0–3 of the
+> workflow are complete and workspace files exist on disk.
 
-These paths are relative to the skill directory:
+These paths are relative to the skill directory (where this SKILL.md lives):
 
 | Skill | Path | When to Read |
 |-------|------|-------------|
-| planning-with-files | `planning-with-files/SKILL.md` | **Always** for 5+ slide decks — plan before build |
-| azure-diagrams | `azure-diagrams/SKILL.md` | Need any Azure/architecture diagram |
-| excalidraw-diagram | `excalidraw-diagram/SKILL.md` | Need hand-drawn style diagrams |
-| frontend-slides | `frontend-slides/SKILL.md` | Creating HTML presentations |
-| pptx | `pptx/SKILL.md` | Complex .pptx creation/editing |
-| skywork-ppt | `skywork-ppt/SKILL.md` | Quick .pptx generation or template fill |
+| azure-diagrams | `../azure-diagrams/SKILL.md` | Need any cloud/architecture diagram (supports Azure, AWS, GCP icons) |
+| excalidraw-diagram | `../excalidraw-diagram/SKILL.md` | Need hand-drawn style diagrams |
+| frontend-slides | `../frontend-slides/SKILL.md` | Creating HTML presentations |
+| pptx | `../pptx/SKILL.md` | Complex .pptx creation/editing |
+| skywork-ppt | `../skywork-ppt/SKILL.md` | Quick .pptx generation or template fill |
 
 **Read the relevant sub-skill's SKILL.md before using it.** Each has specific patterns,
 scripts, and constraints that matter for quality output.
@@ -579,15 +407,16 @@ scripts, and constraints that matter for quality output.
 > style_contract.md, findings.md) exist on disk. Agents READ these files as input.
 
 The `agents/` directory contains instructions for specialized sub-agents. Read the
-relevant agent file before spawning it.
+relevant agent file before spawning it. All agents use `workspace_path` as their
+primary input parameter pointing to `outputs/{project-name}/`.
 
 | Agent | File | When to Spawn |
 |-------|------|--------------|
-| **Research Agent** | `agents/research-agent.md` | Phase 1 — gather Azure docs, features, case studies |
+| **Research Agent** | `agents/research-agent.md` | Phase 1 — gather cloud service docs, features, case studies |
 | **Diagram Agent** | `agents/diagram-agent.md` | Phase 2 — generate architecture diagrams and visuals |
 | **Slide Builder Agent** | `agents/slide-builder-agent.md` | Phase 3 — build individual slides (parallelizable) |
 | **Assembly Agent** | `agents/assembly-agent.md` | Phase 4 — merge slides + diagrams into final deck |
-| **Review Agent** | `agents/review-agent.md` | Phase 5 — quality review (7 dimensions, max 2 rounds) |
+| **Review Agent** | `agents/review-agent.md` | Phase 5 — quality review (max 2 rounds; skipped for <5 slides where orchestrator self-checks) |
 | **Fix Agent** | `agents/fix-agent.md` | Phase 5 — apply fixes from review report |
 
 **Agent interaction flow (file-based):**
@@ -610,30 +439,26 @@ Phase 3: Slide Builder Agent(s)  [parallelizable]
 
 Phase 4: Assembly Agent
   READS  ← task_plan.md, slides/, diagrams/
-  WRITES → final/final-deck.pptx, final/assembly-report.md
+  WRITES → final/final-deck.{pptx|html}, final/assembly-report.md
 
 Phase 5: Review Agent (Round 1)
-  READS  ← style_contract.md, final/final-deck.pptx
+  READS  ← style_contract.md, final/final-deck.*
   WRITES → final/review_report.md
 
 Phase 5: Fix Agent
-  READS  ← final/review_report.md, style_contract.md, final/final-deck.pptx
-  WRITES → final/final-deck.pptx (updated), final/fix_summary.md
+  READS  ← final/review_report.md, style_contract.md, final/final-deck.*
+  WRITES → final/final-deck.* (updated), final/fix_summary.md
 
 Phase 5: Review Agent (Round 2)
-  READS  ← style_contract.md, final/final-deck.pptx, final/review_report.md
+  READS  ← style_contract.md, final/final-deck.*, final/review_report.md
   WRITES → final/review_report.md (updated)
 ```
-
-Each sub-agent receives the **workspace path** so it can READ shared files
-(style_contract.md, findings.md) and WRITE outputs to the correct location.
-All files are in `outputs/{project}/`.
 
 ## Quality Checklist
 
 Before delivering any presentation, verify:
 
-- [ ] **Content accuracy**: Azure service names, pricing tiers, and features are current
+- [ ] **Content accuracy**: Cloud service names, pricing tiers, and features are current (Azure, AWS, GCP — whichever the deck covers)
 - [ ] **Visual consistency**: Diagrams use consistent colors and icon styles throughout
 - [ ] **Language**: No mixed-language issues (don't accidentally leave English labels in a
       Chinese deck or vice versa)
@@ -644,10 +469,10 @@ Before delivering any presentation, verify:
 
 ## Tips for CSA Presentations
 
-→ For detailed tips, read `references/orchestration-and-mcp.md`
+> For detailed tips, read `references/orchestration-and-mcp.md`
 
 Key principles:
-- Lead with the customer's problem, not Azure features
+- Lead with the customer's problem, not cloud service features
 - Use progressive disclosure in architecture diagrams
-- Include decision rationale (why CosmosDB over SQL?)
-- Reference Well-Architected Framework pillars when relevant
+- Include decision rationale (why CosmosDB over SQL? why DynamoDB over RDS?)
+- Reference Well-Architected Framework pillars when relevant (Azure WAF, AWS WAF, GCP Architecture Framework)

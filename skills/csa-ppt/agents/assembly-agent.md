@@ -12,13 +12,12 @@ This agent runs after all slide-building and diagram-generation work is complete
 
 You receive these parameters in your prompt:
 
-- **slide_dirs**: List of directories containing slide files from Slide Builder Agents
-- **diagram_dir**: Directory containing generated diagram images
-- **style_contract**: The locked Style Contract (for final consistency check)
+- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads from `{workspace_path}/slides/` and `{workspace_path}/diagrams/`, writes to `{workspace_path}/final/`.
 - **output_format**: Target format (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
 - **sub_skill_path**: Path to the relevant sub-skill SKILL.md
-- **output_path**: Where to save the final assembled deck
-- **task_plan_path**: Path to task_plan.md for slide ordering reference
+
+Read `{workspace_path}/task_plan.md` for slide ordering reference.
+Read `{workspace_path}/style_contract.md` for final consistency check.
 
 ## Tools
 
@@ -34,48 +33,38 @@ You receive these parameters in your prompt:
 
 **Before doing ANY assembly work, verify that individual slide files exist.**
 
-Run this check FIRST:
-
 ```bash
 echo "=== Assembly Agent Entry Gate ===" && \
-ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null && \
-SLIDE_COUNT=$(ls outputs/{project}/slides/slide-*.pptx outputs/{project}/slides/slide-*.html 2>/dev/null | wc -l) && \
-echo "Individual slide files found: $SLIDE_COUNT"
+SLIDE_COUNT=$(ls {workspace_path}/slides/slide-*.pptx {workspace_path}/slides/slide-*.html 2>/dev/null | wc -l) && \
+echo "Individual slide files found: $SLIDE_COUNT" && \
+ls -la {workspace_path}/slides/
 ```
 
 **Gate rules:**
-- ❌ If `slides/` is EMPTY (0 slide files) → **ABORT IMMEDIATELY.** Return this error to the orchestrator:
-  > "ASSEMBLY ABORTED: slides/ directory is empty. Phase 3 (Slide Builder) must produce individual slide-{N}.{pptx|html} files before assembly can begin. Do NOT build slides directly into a final deck."
-- ❌ If `slides/manifest.md` does not exist → **ABORT.** The Slide Builder must produce a manifest.
-- ❌ If slide count < expected count from task_plan.md → **ABORT.** Report which slides are missing.
-- ✅ Only proceed to Step 1 when slides/ has the expected number of individual files AND manifest.md exists.
+- If `slides/` is EMPTY (0 slide files) → **ABORT IMMEDIATELY.** Return this error to the orchestrator:
+  > "ASSEMBLY ABORTED: slides/ directory is empty. Phase 3 (Slide Builder) must produce individual slide-{N}.{ext} files before assembly can begin. Do NOT build slides directly into a final deck."
+- If `slides/manifest.md` does not exist → **ABORT.** The Slide Builder must produce a manifest.
+- If slide count < expected count from task_plan.md → **ABORT.** Report which slides are missing.
+- Only proceed to Step 1 when slides/ has the expected number of files AND manifest.md exists.
 
-**This gate exists because the LLM sometimes takes a shortcut by building all slides in one Presentation() object and saving directly to final/. That approach breaks crash recovery, parallel execution, and review traceability. The Assembly Agent MUST NOT work around this by building slides itself — its job is to MERGE existing files, not CREATE new content.**
+**This gate exists because the LLM sometimes takes a shortcut by building all slides in one Presentation() object and saving directly to final/. That approach breaks crash recovery, parallel execution, and review traceability. The Assembly Agent MUST NOT work around this — its job is to MERGE existing files, not CREATE new content.**
 
 ### Step 1: Inventory All Artifacts
 
-1. Read each Slide Builder manifest to list all slide files **and their formats**
+1. Read each Slide Builder manifest to list all slide files
 2. Read the Diagram Agent manifest to list all diagram images
 3. Read task_plan.md to get the expected slide order
 4. Cross-reference: verify every planned slide has a corresponding file
-5. **Categorize slides by intermediate format** — some may be .pptx, others .html
 
 ```markdown
 Expected: Slides 1-10
 Found:
-  - outputs/slides/slide-1.pptx (format: pptx)
-  - outputs/slides/slide-2.pptx (format: pptx)
-  - outputs/slides/slide-3.pptx (format: pptx)
-  - outputs/slides/slide-4.pptx (format: pptx)
-  - outputs/slides/slide-5.html (format: html — complex architecture annotations)
-  - outputs/slides/slide-6.html (format: html — swimlane diagram layout)
-  - outputs/slides/slide-7.html (format: html — Chinese-heavy content)
-  - outputs/slides/slide-8.pptx (format: pptx)
-  - outputs/slides/slide-9.pptx (format: pptx)
-  - outputs/slides/slide-10.pptx (format: pptx)
-  - outputs/diagrams/: {diagram files from manifest}
+  - outputs/slides-1-2/: slide-1.html, slide-2.html
+  - outputs/slides-3-5/: slide-3.html, slide-4.html, slide-5.html
+  - outputs/slides-6-8/: slide-6.html, slide-7.html, slide-8.html
+  - outputs/slides-9-10/: slide-9.html, slide-10.html
+  - outputs/diagrams/: rag-architecture.png, data-pipeline.png
 Missing: (none)
-Format mix: 7 x .pptx, 3 x .html
 ```
 
 Flag any missing slides immediately.
@@ -91,63 +80,42 @@ Flag any missing slides immediately.
 
 ### Step 3: Normalize Slide Files
 
-Slide Builder Agents may produce **mixed intermediate formats** (.pptx and .html) based on
-content complexity. Before merging, normalize them to a single target format:
+Before merging, ensure all slides are compatible:
 
-**If final output is .pptx:**
-1. .pptx intermediate slides → ready to merge directly
-2. .html intermediate slides → convert to .pptx via html2pptx.js or python-pptx
-3. Verify all converted slides match Style Contract after conversion
-
-**If final output is .html:**
-1. .html intermediate slides → ready to merge directly
-2. .pptx intermediate slides → extract content and recreate as HTML
-3. Check for conflicting CSS styles (resolve by namespacing)
-
-**For all formats:**
-1. Verify image paths are relative and will resolve in the final structure
-2. Ensure font declarations are consistent across all slides
-3. Verify diagram embeds survived any format conversion
+1. Verify file formats are consistent (all HTML, or all XML, etc.)
+2. Check for conflicting CSS styles if HTML-based (resolve by namespacing)
+3. Verify image paths are relative and will resolve in the final structure
+4. Ensure font declarations are consistent across all slides
 
 ### Step 4: Order and Merge
 
 1. Order slides according to task_plan.md (slide 1, 2, 3, ...)
-2. After normalization (Step 3), all slides are in the target format. Merge using the appropriate tool:
+2. Merge using the appropriate tool:
 
-**For .pptx final output (python-pptx merge):**
-```python
-from pptx import Presentation
-import copy
-
-final_prs = Presentation()
-# Set slide dimensions from Style Contract
-final_prs.slide_width = Inches(13.333)
-final_prs.slide_height = Inches(7.5)
-
-for slide_file in sorted_slide_files:
-    src_prs = Presentation(slide_file)
-    for slide in src_prs.slides:
-        # Copy slide layout and content to final presentation
-        new_slide = final_prs.slides.add_slide(final_prs.slide_layouts[6])  # Blank
-        for shape in slide.shapes:
-            # Clone each shape to the new slide
-            ...
-    final_prs.save('final/final-deck.pptx')
+**For html2pptx workflow:**
+```bash
+# Combine all slide HTML files into one document
+# Then convert to .pptx
+node html2pptx.js combined-slides.html --output final-deck.pptx
 ```
 
-**Note:** If some slides were originally .html, they must be converted to .pptx first
-(via html2pptx.js) before merging:
+**For OOXML workflow:**
 ```bash
-# Convert any remaining .html slides to .pptx
-# html2pptx.js is located in the pptx sub-skill: skills/pptx/scripts/html2pptx.js
-node skills/pptx/scripts/html2pptx.js slides/slide-{N}.html --output slides/slide-{N}.pptx
+# Merge slide XML files into the .pptx package
+python merge_slides.py --slides slide-1.xml slide-2.xml ... --output final-deck.pptx
 ```
 
-**For .html final output:**
+**For frontend-slides:**
 ```bash
-# Combine all .html slides into single HTML with navigation
-# Any .pptx intermediate slides must have their content extracted to HTML first
+# Combine into single HTML with navigation
 # Ensure all CSS is merged and deduplicated
+```
+
+**For skywork-ppt:**
+```python
+# Use python-pptx to combine slide files
+from pptx import Presentation
+# Merge logic
 ```
 
 ### Step 5: Embed Speaker Notes
@@ -192,36 +160,38 @@ Save alongside the output:
 # Assembly Report
 
 ## Output
-- File: outputs/{project}/final/final-deck.{pptx|html}
-- Format: {PowerPoint (.pptx) | HTML}
+- File: outputs/final-deck.pptx
+- Format: PowerPoint via html2pptx
 - Slides: 10
 - File size: 4.2 MB
 
-## Intermediate Format Mix
-- 7 slides built as .pptx (direct python-pptx)
-- 3 slides built as .html (converted to .pptx during assembly)
-
 ## Slide Order
-| # | Title | Intermediate Format | Conversion |
-|---|-------|-------------------|------------|
-| 1 | {title from task_plan} | .pptx | none |
-| 2 | {title from task_plan} | .pptx | none |
-| ... | ... | .html | html→pptx |
+1. Title — "企业级RAG智能检索方案"
+2. Agenda / 目录
+3. Customer challenges / 客户痛点
+4. Solution overview / 方案概览
+5. Architecture deep-dive / 架构详解 (contains: rag-architecture.png)
+6. Data pipeline / 数据处理流程 (contains: data-pipeline.png)
+7. Chinese document optimization / 中文文档优化
+8. Security & compliance / 安全合规
+9. Implementation roadmap / 实施路径
+10. Next steps / 下一步
 
 ## Embedded Assets
-- {diagram-name}.png → Slide {N}
+- rag-architecture.png → Slide 5
+- data-pipeline.png → Slide 6
 
 ## Speaker Notes
-- Added to slides {list}
+- Added to slides 3, 4, 5, 6, 7, 8
 
 ## Issues Detected
-- {any issues or "(none)"}
+- (none)
 ```
 
 ## Output Format
 
-1. **Final deck**: `{output_path}/final-deck.{pptx|html}` — the assembled presentation
-2. **Assembly report**: `{output_path}/assembly-report.md` — manifest of what was assembled
+1. **Final deck**: `{workspace_path}/final/final-deck.{pptx|html}` — the assembled presentation
+2. **Assembly report**: `{workspace_path}/final/assembly-report.md` — manifest of what was assembled
 
 ## Guidelines
 
@@ -233,11 +203,9 @@ Save alongside the output:
 - **Report missing pieces.** If a planned slide is missing from the builder outputs, document it clearly rather than silently skipping it. The orchestrator needs to know.
 - **Speaker notes matter.** Don't skip the notes merge — they're part of the deliverable.
 
-## ⛔ Rule 3 Compliance: Update task_plan.md
+## Error Handling
 
-**After completing assembly, you MUST update the workspace files:**
-
-1. **Edit `outputs/{project}/task_plan.md`** — mark Phase 4 assembly tasks as `[x]`
-2. **Append to `outputs/{project}/progress.md`** — "Phase 4 complete. Final deck assembled: final-deck.{ext}."
-
-This enables session resume if interrupted. Do NOT skip this step.
+- **Missing slide files**: Report which slides are missing in the assembly report. Assemble what's available and mark gaps with `[MISSING: slide-N]`. The orchestrator can re-run the Slide Builder for those.
+- **Conversion/merge failure**: Log the full error to `{workspace_path}/progress.md`. Suggest whether it's a tool issue (retry) or a content issue (specific slide causing problems).
+- **Broken image references**: List all broken references in the assembly report. Continue assembly — the Review Agent will catch visual issues.
+- **Output file corrupt**: Delete the corrupt file, log the error, and suggest rebuilding from the individual slide files.

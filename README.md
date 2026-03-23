@@ -1,15 +1,15 @@
 # CSA PPT Plugin
 
-All-in-one presentation toolkit for **Azure Cloud Solution Architects**, built for Claude Code.
+All-in-one presentation toolkit for **Cloud Solution Architects** (Azure / AWS / GCP), built for Claude Code.
 
 ## What's Inside
 
-### Skills (7 sub-skills)
+### Skills (1 orchestrator + 5 sub-skills + 1 utility)
 
 | Skill | Description |
 |-------|-------------|
 | **csa-ppt** | Smart orchestrator — analyzes your request and routes to the best tool chain |
-| **azure-diagrams** | 700+ Azure icons, architecture diagrams, swimlane flows, ERDs, timelines |
+| **azure-diagrams** | 700+ cloud icons (Azure/AWS/GCP), architecture diagrams, swimlane flows, ERDs, timelines |
 | **excalidraw-diagram** | Hand-drawn style diagrams for brainstorming and conceptual visuals |
 | **frontend-slides** | Zero-dependency HTML presentations, great for Chinese content and code |
 | **pptx** | Full OOXML-level PowerPoint creation and editing |
@@ -23,7 +23,7 @@ decides based on deck size and complexity:
 
 | Agent | Phase | Role | When Dispatched |
 |-------|-------|------|-----------------|
-| **Research Agent** | Phase 1 | Gathers Azure docs, features, case studies, industry context | Topics need web research |
+| **Research Agent** | Phase 1 | Gathers cloud docs (Azure/AWS/GCP), features, case studies, industry context | Topics need web research |
 | **Diagram Agent** | Phase 2 | Generates architecture diagrams and technical visuals | Deck includes architecture diagrams |
 | **Slide Builder Agent** | Phase 3 | Builds individual slides, smart format selection per slide (parallelizable) | Large decks (10+ slides) |
 | **Assembly Agent** | Phase 4 | Normalizes mixed formats + merges slides + diagrams into final deck | Multiple builders produced separate files |
@@ -74,7 +74,7 @@ before merging into the final deck.
 - **Customer Solution Demos** — Architecture diagrams + polished .pptx decks
 - **Internal Tech Sharing** — HTML slides with code syntax highlighting
 - **Workshops / Hands-on Labs** — Step-by-step interactive presentations
-- **Architecture Reviews (CAF/WAF)** — Assessment decks with as-is/to-be diagrams
+- **Architecture Reviews (CAF/WAF/Well-Architected)** — Assessment decks with as-is/to-be diagrams
 - **Template Filling** — Fill company/event templates while preserving branding
 
 ## Installation
@@ -97,6 +97,7 @@ claude --plugin-dir /path/to/csa-ppt-plugin
 Just describe what you need in natural language:
 
 - "帮我做一个给客户演示Azure RAG方案的PPT"
+- "Create an AWS to Azure migration comparison deck in English"
 - "做一个内部AKS迁移到ACA的技术分享，中文，HTML格式"
 - "用这个模板帮我填写季度工作汇报"
 - "画一个Azure Landing Zone的架构图"
@@ -167,13 +168,16 @@ csa-ppt-plugin/
 │   │   │   ├── assembly-agent.md
 │   │   │   ├── review-agent.md
 │   │   │   └── fix-agent.md
-│   │   └── references/          # Workflow guides per scenario
-│   │       ├── orchestration-and-mcp.md
-│   │       ├── workflow-customer-demo.md
-│   │       ├── workflow-tech-sharing.md
-│   │       ├── workflow-workshop.md
-│   │       ├── workflow-architecture-review.md
-│   │       └── workflow-template-fill.md
+│   │   ├── references/          # Workflow guides per scenario
+│   │   │   ├── templates.md
+│   │   │   ├── orchestration-and-mcp.md
+│   │   │   ├── workflow-customer-demo.md
+│   │   │   ├── workflow-tech-sharing.md
+│   │   │   ├── workflow-workshop.md
+│   │   │   ├── workflow-architecture-review.md
+│   │   │   └── workflow-template-fill.md
+│   │   └── evals/               # Skill evaluation test cases
+│   │       └── evals.json
 │   ├── azure-diagrams/          # 700+ Azure icons, diagram scripts
 │   ├── excalidraw-diagram/      # Hand-drawn style diagrams
 │   ├── frontend-slides/         # HTML presentations

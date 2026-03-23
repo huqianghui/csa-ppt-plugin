@@ -46,24 +46,25 @@ When filling a provided template:
 
 When these MCP servers are available, leverage them:
 
-- **Tavily**: Research Azure services, pricing, best practices, case studies before
-  building content. Especially useful for customer demos where you need current
-  information. Write results to `findings.md`.
+- **Tavily**: Research cloud services (Azure, AWS, GCP), pricing, best practices,
+  case studies before building content. Especially useful for customer demos where
+  you need current information. Write results to `findings.md`.
 - **Figma**: If the user has design specs in Figma, use `get_design_context` to extract
   visual specifications and maintain design consistency.
 - **Pencil**: For quick UI mockups and wireframes that need to go into the presentation.
-- **Playwright**: For capturing screenshots of live Azure portal, dashboards, or web
+- **Playwright**: For capturing screenshots of live cloud portals, dashboards, or web
   apps to embed in slides. Save screenshots to `diagrams/`.
 
 ## Tips for CSA Presentations
 
-- **Lead with the customer's problem**, not Azure features. Architecture slides should
+- **Lead with the customer's problem**, not cloud features. Architecture slides should
   answer "why this design?" not just "what services are used."
 - **Use progressive disclosure** in architecture diagrams — start simple, add layers.
   Don't dump a full architecture on slide 2.
-- **Include decision rationale** — why CosmosDB over SQL? Why Event Hub over Service Bus?
-  CSA credibility comes from showing you understand trade-offs.
-- **Reference Well-Architected Framework pillars** when relevant — reliability, security,
-  cost optimization, operational excellence, performance efficiency.
+- **Include decision rationale** — why CosmosDB over DynamoDB? Why Event Hub over
+  Kinesis? CSA credibility comes from showing you understand trade-offs.
+- **Reference Well-Architected Framework pillars** when relevant (Azure WAF, AWS WAF,
+  GCP Architecture Framework) — reliability, security, cost optimization, operational
+  excellence, performance efficiency.
 - **For workshops**: Include "try it yourself" moments with clear instructions. Screenshot
-  the Azure Portal steps if possible (Playwright MCP can help here).
+  the cloud portal steps if possible (Playwright MCP can help here).

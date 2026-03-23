@@ -12,11 +12,12 @@ The key principle is **surgical precision**: change only what the review report 
 
 You receive these parameters in your prompt:
 
-- **review_report_path**: Path to the review_report.md from the Review Agent
-- **style_contract**: The locked Style Contract (colors, fonts, layout rules, language)
-- **output_files**: Path to the assembled .pptx, HTML, or slide files to fix
-- **output_format**: The tool chain used to create the deck (pptx/html2pptx/frontend-slides/skywork-ppt)
+- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads review report from `{workspace_path}/final/review_report.md`, fixes files in `{workspace_path}/final/` and `{workspace_path}/slides/`, writes fix summary to `{workspace_path}/final/fix_summary.md`.
+- **output_format**: The tool chain used to create the deck (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
 - **sub_skill_path**: Path to the relevant sub-skill SKILL.md for the output format
+
+Read `{workspace_path}/style_contract.md` for the locked Style Contract.
+Read `{workspace_path}/final/review_report.md` for the review findings.
 
 ## Tools
 
@@ -87,13 +88,15 @@ If any slides need to be added, removed, or reordered:
 2. Update any agenda/TOC slides to match
 3. Verify slide numbering is still correct
 
-### Step 7: Reassemble (if needed)
+### Step 7: Request Reassembly (if needed)
 
-If the output format requires a build step:
+If the fixes require a full rebuild (e.g., HTML slides changed and need html2pptx re-conversion):
 
-1. Re-run the assembly process (html2pptx, etc.)
-2. Verify the output file is valid
-3. Save to the same output location (overwrite the old version)
+1. **Do NOT reassemble yourself.** Reassembly is the Assembly Agent's responsibility.
+2. Note in `fix_summary.md` that reassembly is required, e.g.: `## Reassembly Required: YES`
+3. The orchestrator will re-invoke the Assembly Agent to rebuild the final deck from the fixed slide files.
+
+If fixes were applied directly to the assembled file (e.g., XML edits inside a .pptx, or CSS changes in a single HTML file), reassembly is not needed — note `## Reassembly Required: NO`.
 
 ### Step 8: Write Fix Summary
 
@@ -106,7 +109,7 @@ Save a brief `fix_summary.md` documenting what was changed:
 1. Slide 3: Changed background #2D2D2D → #1B1B1B
 2. Slide 3: Reduced 9 bullets to 6, moved 3 items to speaker notes
 3. Slides 5,7: Changed font "Helvetica" → "Segoe UI" on body text
-4. Slide 8: Fixed "Azure Cognitive Search" → "Azure AI Search"
+4. Slide 8: Fixed "Azure Cognitive Search" → "Azure AI Search" (outdated service name)
 
 ## Files Modified
 - outputs/slides/slide3.html
@@ -133,12 +136,12 @@ Two files:
 - **Log everything.** The fix_summary.md must list every change so the Round 2 review can verify.
 - **Don't guess.** If a fix instruction is ambiguous, apply the most conservative interpretation. The Review Agent will catch anything missed in Round 2.
 - **Speaker notes are your friend.** When reducing content density, move the extra content to speaker notes rather than deleting it.
+- **Reassembly is not your job.** If a full rebuild is needed, document it in fix_summary.md and let the orchestrator invoke the Assembly Agent. You only edit individual slide source files.
 
-## ⛔ Rule 3 Compliance: Update task_plan.md
+## Error Handling
 
-**After applying all fixes, you MUST update the workspace files:**
-
-1. **Edit `outputs/{project}/task_plan.md`** — mark fix tasks as `[x]` in Phase 5
-2. **Append to `outputs/{project}/progress.md`** — "Phase 5 fixes applied. {N} issues fixed. See fix_summary.md."
-
-This enables session resume if interrupted. Do NOT skip this step.
+- **review_report.md not found**: Write `[ERROR]` to `{workspace_path}/progress.md` and stop. Cannot fix without a review report.
+- **style_contract.md not found**: Write `[ERROR]` to `{workspace_path}/progress.md` and stop. Cannot verify fixes align with the contract.
+- **Slide file referenced in review not found**: Log the missing file in `fix_summary.md` under `## Not Fixed` with reason "source file not found". Continue fixing other slides.
+- **Fix instruction is ambiguous**: Apply the most conservative interpretation and note the ambiguity in `fix_summary.md`. The Round 2 review will catch anything missed.
+- **Fix causes a new issue** (e.g., color change makes text unreadable): Apply the fix as instructed but note the potential side effect in `fix_summary.md` so the Round 2 review is aware.

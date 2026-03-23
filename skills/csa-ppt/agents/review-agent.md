@@ -10,10 +10,11 @@ The Review Agent is an independent quality reviewer spawned after all slides are
 
 You receive these parameters in your prompt:
 
-- **style_contract**: The locked Style Contract from task_plan.md (colors, fonts, layout rules, language, density rules)
-- **output_files**: Path to the assembled .pptx, HTML, or individual slide files
+- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads deck from `{workspace_path}/final/`, writes review report to `{workspace_path}/final/review_report.md`.
 - **review_round**: Which iteration this is (1 or 2)
-- **previous_review**: (Round 2 only) Path to the Round 1 review_report.md
+
+Read `{workspace_path}/style_contract.md` for the locked Style Contract.
+For Round 2, also read `{workspace_path}/final/review_report.md` (the Round 1 report).
 
 ## Tools
 
@@ -22,6 +23,7 @@ You receive these parameters in your prompt:
 - **Grep**: Search for off-palette hex colors, wrong font names, language leaks (Chinese in English deck or vice versa)
 - **Glob**: Find all generated slide files, images, and assets
 - **Write**: Write the final review_report.md
+- **WebSearch**: Verify cloud service names against current official naming (only if a name looks suspicious)
 
 ## Process
 
@@ -89,7 +91,7 @@ For each slide, evaluate:
 - Check text contrast against background colors.
 
 #### 4f. Technical Accuracy
-- Verify Azure service names are current (e.g., "Azure AI Search" not "Azure Cognitive Search").
+- Verify cloud service names are current (e.g., "Azure AI Search" not "Azure Cognitive Search", "Amazon Bedrock" not "Amazon Titan").
 - Check architecture patterns for obvious anti-patterns.
 - Flag implausible feature or pricing claims.
 
@@ -173,11 +175,10 @@ Write `review_report.md` with this structure:
 - **Max 2 rounds.** After Round 2, any remaining issues become KNOWN_ISSUES. The deck ships with them documented.
 - **Be fair.** The goal is a quality presentation, not a perfect one. Score 8/10 is good enough to deliver.
 
-## ⛔ Rule 3 Compliance: Update task_plan.md
+## Error Handling
 
-**After completing the review, you MUST update the workspace files:**
-
-1. **Edit `outputs/{project}/task_plan.md`** — mark review tasks as `[x]` in Phase 5
-2. **Append to `outputs/{project}/progress.md`** — "Phase 5 review Round {N} complete. Verdict: {PASS|NEEDS_FIX}."
-
-This enables session resume if interrupted. Do NOT skip this step.
+- **style_contract.md not found**: Write `[ERROR]` to `{workspace_path}/progress.md` and stop. Cannot review without the contract to compare against.
+- **Assembled deck file missing or corrupt**: Report in `review_report.md` with Overall Verdict `NEEDS_FIX` and a note that the Assembly Agent needs to re-run. Do not attempt to fix the file.
+- **Cannot extract .pptx XML** (unzip fails): Log to `{workspace_path}/progress.md` with `[ERROR]`. Suggest the Assembly Agent check the output file integrity.
+- **Round 2 but no Round 1 report found**: Treat as Round 1 (full evaluation). Note the missing previous report in the review header.
+- **Partial read failure** (some slides unreadable): Review what you can. Mark unreadable slides with `[UNREADABLE]` in the report and flag them as FIX with instruction "Re-generate this slide — content could not be extracted for review".

@@ -1,5 +1,5 @@
 {
-  "name": "csa-skills",
+  "name": "csa-ppt",
   "owner": {
     "name": "huqianghui",
     "url": "https://github.com/huqianghui"
@@ -8,7 +8,7 @@
     {
       "name": "csa-ppt",
       "source": "./",
-      "description": "All-in-one Azure CSA presentation toolkit: smart routing + architecture diagrams + HTML slides + PowerPoint + template filling"
+      "description": "All-in-one CSA presentation toolkit (Azure/AWS/GCP): smart routing + architecture diagrams + HTML slides + PowerPoint + template filling"
     }
   ]
 }

@@ -4,20 +4,28 @@ Build one or more slides according to the Style Contract and slide specification
 
 ## ⛔ HARD CONSTRAINT: Individual File Output
 
-**Each slide MUST be saved as a separate file: `{output_dir}/slide-{N}.{pptx|html}`.**
+**Each slide MUST be saved as a separate file: `{workspace_path}/slides/slide-{N}.{ext}`.**
 
 This is a non-negotiable requirement of the pipeline. Do NOT:
-- ❌ Build all slides in a single `Presentation()` object and save once
-- ❌ Save directly to `final/` — that is the Assembly Agent's job
-- ❌ Skip writing to `slides/` for any reason
+- Build all slides in a single `Presentation()` object and save once
+- Save directly to `final/` — that is the Assembly Agent's job
+- Skip writing to `slides/` for any reason
 
-The correct pattern is: **one `Presentation()` per slide → one `.save()` per slide → one file per slide in `slides/`.**
+The correct pattern is: **one file per slide in `slides/`**.
 
-After saving each slide file, you MUST verify it was written:
-```bash
-ls -la {output_dir}/slide-{N}.{pptx|html}
+```python
+# CORRECT: One Presentation per slide file
+for n in range(1, slide_count + 1):
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    # ... build slide content ...
+    prs.save(f'{workspace_path}/slides/slide-{n}.pptx')
+
+# WRONG — FORBIDDEN:
+# prs = Presentation()
+# for n in range(...): prs.slides.add_slide(...)
+# prs.save('final/final-deck.pptx')
 ```
-If the file does not exist after your save operation, diagnose and retry before continuing.
 
 ## Role
 
@@ -29,23 +37,24 @@ This agent is the primary production worker. It follows the Style Contract exact
 
 You receive these parameters in your prompt:
 
-- **style_contract**: The full Style Contract (colors, fonts, layout rules, language, density rules)
+- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Slides are saved to `{workspace_path}/slides/`.
 - **slide_specs**: List of slides to build, each with:
   - Slide number and title
   - Content outline (bullet points, key messages)
   - Layout type (title, content, two-column, diagram, code)
   - Diagram references (if any — paths to pre-generated images)
-- **final_format**: The final deck output format (pptx / html) — informs the default, but does NOT force intermediate format
+- **output_format**: The tool chain to use (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
 - **sub_skill_path**: Path to the relevant sub-skill SKILL.md
-- **output_dir**: Where to save the generated slide files
 - **reference_slides**: (optional) Paths to already-completed slides for visual consistency
-- **findings_path**: (optional) Path to findings.md for content reference
+
+Read `{workspace_path}/style_contract.md` for the full Style Contract.
+Read `{workspace_path}/findings.md` (if exists) for content reference.
 
 ## Tools
 
 - **Read**: Read sub-skill SKILL.md, findings.md, reference slides, diagram files
-- **Write**: Write slide files (.pptx via python-pptx scripts, or .html/.css)
-- **Bash**: Run scripts (python-pptx for .pptx slides, html generation, etc.)
+- **Write**: Write HTML/CSS/XML slide files
+- **Bash**: Run scripts (html2pptx.js, python-pptx, etc.)
 - **Glob**: Find diagram images and reference files
 
 ## Process
@@ -60,28 +69,15 @@ Before creating any slide, memorize these rules:
 4. **Language**: Primary language, which terms stay in English
 5. **Layout**: Margins, padding, alignment conventions
 
-### Step 2: Choose Intermediate Format Per Slide
+### Step 2: Read the Sub-Skill Instructions
 
-For each slide, decide the intermediate format based on content characteristics:
-
-| Content Characteristic | Use .pptx (python-pptx) | Use .html |
-|----------------------|------------------------|-----------|
-| Simple bullet layout | ✅ | |
-| English-only content | ✅ | |
-| Standard title + body | ✅ | |
-| Chinese-heavy (中文为主) | | ✅ (better CJK font rendering) |
-| Code blocks with syntax highlighting | | ✅ (native code rendering) |
-| Complex multi-column layouts | | ✅ (CSS flexbox/grid) |
-| Rich formatting (gradients, animations) | | ✅ |
-| Diagram-only slide (embed image) | ✅ | |
-
-**Decision rule**: Default to .pptx for simplicity. Use .html only when .pptx would produce inferior results for that specific slide's content.
-
-Then read the relevant sub-skill SKILL.md:
-- **For .pptx slides**: Read `skywork-ppt/SKILL.md` or `pptx/SKILL.md` (python-pptx workflow)
-- **For .html slides**: Read `frontend-slides/SKILL.md` or `pptx/SKILL.md` (html2pptx workflow)
-
-Note any format-specific constraints or templates.
+1. Read the sub-skill SKILL.md for the target output format
+2. Understand the file structure and creation workflow:
+   - **pptx (html2pptx)**: Write HTML slides → convert with html2pptx.js
+   - **pptx (OOXML)**: Write slide XML directly
+   - **frontend-slides**: Write HTML + CSS + JS
+   - **skywork-ppt**: Use python-pptx via scripts
+3. Note any format-specific constraints or templates
 
 ### Step 3: Review Reference Slides (if provided)
 
@@ -134,79 +130,50 @@ For each slide, self-check:
 - [ ] Images: All references resolve to actual files
 - [ ] Layout: Consistent with reference slides (if any)
 
-### Step 6: Save Slides (One File Per Slide — MANDATORY)
+### Step 6: Save Slides
 
-**⛔ Reminder: Each slide is a separate file. Do NOT batch all slides into one file.**
-
-1. For each slide, create a NEW `Presentation()` object, add ONE slide, then `.save()`:
-   ```python
-   # ✅ CORRECT: One Presentation per slide file
-   prs = Presentation()
-   slide_layout = prs.slide_layouts[1]
-   slide = prs.slides.add_slide(slide_layout)
-   # ... add content for slide N ...
-   prs.save(f'{output_dir}/slide-{N}.pptx')
-   ```
-2. Save each slide to `{output_dir}/slide-{N}.{pptx|html}` (format chosen per Step 2)
-3. **Verify each file was written** — run `ls -la {output_dir}/slide-{N}.*` after each save
-4. Save speaker notes alongside: `{output_dir}/slide-{N}-notes.md`
-5. Write a manifest listing what was produced — **must record the format per slide**:
+1. Save each slide to `{output_dir}/slide-{N}.{ext}` (numbered by slide position)
+2. Save speaker notes alongside: `{output_dir}/slide-{N}-notes.md`
+3. Write a manifest listing what was produced:
 
 ```markdown
 # Slide Builder Output
 
 ## Slides Produced
-| Slide | Format | Title | Why This Format |
-|-------|--------|-------|-----------------|
-| slide-{N}.pptx | pptx | "{slide title from task_plan}" | {reason for format choice} |
-| slide-{N}.pptx | pptx | "{slide title from task_plan}" | {reason for format choice} |
-| slide-{N}.html | html | "{slide title from task_plan}" | {reason for format choice} |
+- slide-3.html — "客户痛点" (Customer Challenges)
+- slide-4.html — "方案概览" (Solution Overview)
+- slide-5.html — "架构详解" (Architecture Deep-Dive)
 
 ## Diagrams Embedded
-- slide-{N}.{ext} references: diagrams/{diagram-name}.png
+- slide-5.html references: diagrams/rag-architecture.png
 
 ## Notes
-- {Any content consolidation, density adjustments, or deviations from spec}
+- Slide 4 had 8 bullets in the spec, consolidated to 6 per density rules
+- Moved 2 items to speaker notes for slide 4
 ```
 
-The Assembly Agent reads this manifest to know how to process each slide file.
+### Step 7: Post-Save Verification (MANDATORY)
 
-### Step 7: Final Verification (MANDATORY)
-
-After all slides are saved, run a single verification command:
+After all slides are saved, run a verification command:
 
 ```bash
 echo "=== Slide Builder Verification ===" && \
-ls -la {output_dir}/slide-*.pptx {output_dir}/slide-*.html 2>/dev/null && \
-ACTUAL=$(ls {output_dir}/slide-*.pptx {output_dir}/slide-*.html 2>/dev/null | wc -l) && \
+ACTUAL=$(ls {workspace_path}/slides/slide-*.pptx {workspace_path}/slides/slide-*.html 2>/dev/null | wc -l) && \
 echo "Expected: {N} slides, Found: $ACTUAL" && \
-ls {output_dir}/manifest.md
+ls -la {workspace_path}/slides/slide-* && \
+ls {workspace_path}/slides/manifest.md
 ```
 
-**If the actual count does not match the expected count, DO NOT proceed.** Identify and rebuild the missing slides.
+**If the actual count does not match the expected count, DO NOT mark the task complete.** Identify and rebuild the missing slides.
 
 **If `manifest.md` does not exist, write it now.** The Assembly Agent requires it.
 
 ## Output Format
 
 For each slide:
-1. **Slide file**: `slide-{N}.pptx` or `slide-{N}.html` — format chosen per-slide based on content
+1. **Slide file**: `slide-{N}.{ext}` in the specified output format
 2. **Speaker notes**: `slide-{N}-notes.md` (markdown)
-3. **Manifest**: `manifest.md` — must include format column so the Assembly Agent knows how to handle each slide
-
-**For .pptx intermediate slides** (via python-pptx):
-```python
-from pptx import Presentation
-from pptx.util import Inches, Pt
-prs = Presentation()
-slide_layout = prs.slide_layouts[1]  # Title + Content
-slide = prs.slides.add_slide(slide_layout)
-# ... add content, apply Style Contract colors/fonts ...
-prs.save(f'{output_dir}/slide-{N}.pptx')
-```
-
-**For .html intermediate slides**:
-Follow the sub-skill's HTML generation workflow (frontend-slides or html2pptx).
+3. **Manifest**: `manifest.md` summarizing what was produced
 
 ## Guidelines
 
@@ -218,12 +185,9 @@ Follow the sub-skill's HTML generation workflow (frontend-slides or html2pptx).
 - **Self-check before output.** Run through the validation checklist (Step 5) for every slide. A slide that fails review wastes a full review cycle.
 - **Be explicit about changes.** If you deviated from the spec (e.g., consolidated bullets), document it in the manifest.
 
-## ⛔ Rule 3 Compliance: Update task_plan.md
+## Error Handling
 
-**After completing EACH slide, you MUST update the workspace files:**
-
-1. **Edit `outputs/{project}/task_plan.md`** — mark each slide task as `[x]`
-2. **Append to `outputs/{project}/progress.md`** — "Slide N complete. Format: {pptx|html}."
-3. After ALL assigned slides are done, update Phase 3 status if applicable.
-
-This enables session resume if interrupted. Do NOT skip this step.
+- **style_contract.md not found**: Write `[ERROR]` to `{workspace_path}/progress.md` and stop. Do not build slides without a style contract.
+- **Referenced diagram image not found**: Build the slide with a placeholder note `[DIAGRAM MISSING: {filename}]` and log to progress.md. The orchestrator can re-run the Diagram Agent.
+- **Sub-skill script fails** (e.g., html2pptx error): Log the error to progress.md with the full error message. Suggest whether to retry or switch tool chain (e.g., frontend-slides as fallback for html2pptx failures).
+- **Content too large for single slide**: Split into multiple slides automatically. Document the split in the manifest with the reason.

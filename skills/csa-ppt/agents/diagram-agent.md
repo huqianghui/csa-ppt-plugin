@@ -12,14 +12,15 @@ This agent runs independently and can be parallelized with the Research Agent or
 
 You receive these parameters in your prompt:
 
+- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Diagrams are saved to `{workspace_path}/diagrams/`.
 - **diagram_specs**: List of diagrams to generate, each with:
   - Diagram name and description
   - Diagram type (architecture, swimlane, sequence, ERD, timeline, conceptual)
   - Components/services to include
   - Data flow direction
-- **style_contract**: The locked Style Contract (color palette, diagram color coding conventions)
-- **output_dir**: Where to save generated diagram images
 - **output_format**: Image format and resolution (default: PNG, 300 DPI / 2x scale)
+
+Read `{workspace_path}/style_contract.md` for the locked Style Contract (color palette, diagram color coding conventions).
 
 ## Tools
 
@@ -36,7 +37,7 @@ For each diagram in the specs, determine:
 
 | Diagram Type | Best Tool | Why |
 |-------------|-----------|-----|
-| Azure architecture | **azure-diagrams** | 700+ official Azure icons, professional layout |
+| Cloud architecture (Azure/AWS/GCP) | **azure-diagrams** | 700+ official cloud icons, professional layout |
 | Swimlane / business flow | **azure-diagrams** (matplotlib) | Built-in swimlane support |
 | Sequence / auth flow | **azure-diagrams** | Dedicated sequence diagram patterns |
 | ERD / data model | **azure-diagrams** | Entity relationship support |
@@ -46,7 +47,7 @@ For each diagram in the specs, determine:
 
 ### Step 2: Read the Sub-Skill Instructions
 
-1. Read `azure-diagrams/SKILL.md` if generating Azure architecture diagrams
+1. Read `azure-diagrams/SKILL.md` if generating cloud architecture diagrams
 2. Read `excalidraw-diagram/SKILL.md` if generating hand-drawn style diagrams
 3. Note the script locations, parameters, and output conventions
 
@@ -76,7 +77,7 @@ For each diagram:
 **For azure-diagrams:**
 ```python
 # Follow patterns from azure-diagrams/SKILL.md
-# Use official Azure icon classes
+# Use official cloud icon classes (Azure, AWS, GCP as needed)
 # Apply Style Contract colors to clusters and edges
 ```
 
@@ -108,34 +109,26 @@ Save a manifest documenting what was generated:
 ## Diagrams Generated
 | File | Type | Tool | Size | Description |
 |------|------|------|------|-------------|
-| {diagram-name}.png | Architecture | azure-diagrams | 2400x1600 | {description from task_plan} |
-| {diagram-name}.png | Swimlane | azure-diagrams | 2400x1200 | {description from task_plan} |
-| {diagram-name}.png | Conceptual | excalidraw | 1800x1200 | {description from task_plan} |
+| rag-architecture.png | Architecture | azure-diagrams | 2400x1600 | RAG solution overview |
+| data-pipeline.png | Swimlane | azure-diagrams | 2400x1200 | Data processing flow |
+| concept-sketch.png | Conceptual | excalidraw | 1800x1200 | High-level concept |
 
 ## Color Mapping Used
-- Primary ({hex}): {role from style_contract}
-- Accent ({hex}): {role from style_contract}
-- Secondary ({hex}): {role from style_contract}
+- Primary (#0078D4): Cloud services, main flow
+- Accent (#50E6FF): Highlights, user-facing components
+- Secondary (#1B1B1B): Labels, borders
 
 ## Notes
-- {Any deviations from spec, progressive disclosure choices, etc.}
+- rag-architecture.png uses progressive disclosure — simple version for overview slide
+- data-pipeline.png includes 5 swim lanes for different processing stages
 ```
 
 ## Output Format
 
 For each diagram:
-1. **Image file**: `{output_dir}/{diagram-name}.png` (or .svg if specified)
-2. **Generation script**: `{output_dir}/{diagram-name}.py` (kept for reproducibility)
-3. **Manifest**: `{output_dir}/manifest.md`
-
-## ⛔ Rule 3 Compliance: Update task_plan.md
-
-**After completing ALL diagrams, you MUST update the workspace files:**
-
-1. **Edit `outputs/{project}/task_plan.md`** — mark each diagram task as `[x]`, update Phase 2 status
-2. **Append to `outputs/{project}/progress.md`** — "Phase 2 complete. N diagrams saved to diagrams/."
-
-This enables session resume if interrupted. Do NOT skip this step.
+1. **Image file**: `{workspace_path}/diagrams/{diagram-name}.png` (or .svg if specified)
+2. **Generation script**: `{workspace_path}/diagrams/{diagram-name}.py` (kept for reproducibility)
+3. **Manifest**: `{workspace_path}/diagrams/manifest.md`
 
 ## Guidelines
 
@@ -144,5 +137,12 @@ This enables session resume if interrupted. Do NOT skip this step.
 - **Progressive disclosure.** For complex architectures, consider generating both a simple overview and a detailed version. The Slide Builder can choose which to use.
 - **Keep scripts.** Save the generation scripts alongside the images so diagrams can be regenerated if the Style Contract changes.
 - **Label readability.** Ensure all text labels are large enough to read at 1080p presentation resolution. When in doubt, make text bigger.
-- **Verify Azure icon names.** Use the current official icon class names from the azure-diagrams library. Old names may not resolve.
+- **Verify icon names.** Use the current official icon class names from the azure-diagrams library. Old names may not resolve. For AWS/GCP diagrams, check that the library supports the needed icons.
 - **Transparent backgrounds.** Default to transparent PNG backgrounds so diagrams work on any slide background color.
+
+## Error Handling
+
+- **Script execution fails**: Log the error to `{workspace_path}/progress.md` with prefix `[ERROR]`. Suggest a fix (e.g., missing dependency, wrong icon name). If the error is in azure-diagrams, suggest trying excalidraw-diagram as a fallback and note the degradation.
+- **style_contract.md not found**: Write `[ERROR]` to progress.md and stop. Do not use default colors — the orchestrator must provide the contract.
+- **Generated image is empty or corrupt**: Delete the bad file, log to progress.md, and retry once with simplified parameters (fewer components, simpler layout). If retry fails, report with suggested manual action.
+- **Partial success** (some diagrams succeeded, some failed): Write the manifest listing successful diagrams and mark failed ones with `[FAILED]` and the error reason.

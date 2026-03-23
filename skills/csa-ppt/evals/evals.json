@@ -1,0 +1,71 @@
+{
+  "skill_name": "csa-ppt",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我做一个给客户演示的PPT，主题是用Azure OpenAI Service + Azure AI Search搭建一个企业级RAG方案。客户是一家金融公司，需要处理中文文档检索。大概10页左右，需要架构图。",
+      "expected_output": "Should produce a .pptx file with ~10 slides including architecture diagram. Route: azure-diagrams + pptx/skywork-ppt.",
+      "files": [],
+      "assertions": [
+        {"name": "correct_routing", "type": "qualitative", "criteria": "Selects pptx output format (html2pptx or skywork-ppt) and azure-diagrams for architecture diagram generation"},
+        {"name": "architecture_diagram_exists", "type": "file_check"},
+        {"name": "slide_count_reasonable", "type": "quantitative"},
+        {"name": "key_services_mentioned", "type": "content_check"},
+        {"name": "narrative_structure", "type": "qualitative", "criteria": "Follows problem → solution → architecture → implementation → next steps flow; includes agenda slide and clear section transitions"},
+        {"name": "chinese_content", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我下周要在团队内部做一个Azure Container Apps的技术分享，主要讲怎么从AKS迁移到ACA，包括对比、迁移步骤和注意事项。内容比较多，中文为主，帮我做成HTML slides。",
+      "expected_output": "Should produce HTML slides via frontend-slides. Route: frontend-slides for Chinese-heavy internal sharing.",
+      "files": [],
+      "assertions": [
+        {"name": "correct_format_html", "type": "file_check"},
+        {"name": "comparison_table", "type": "content_check"},
+        {"name": "migration_steps", "type": "content_check"},
+        {"name": "chinese_rendering", "type": "content_check"},
+        {"name": "code_snippets", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "HR给了我一个公司模板 company-template.pptx，让我做一个关于我过去一个季度工作成果的分享，包括帮客户做了3个Azure landing zone部署、2个AI项目POC、还有一些社区分享。帮我填好这个模板。",
+      "expected_output": "Should analyze template then fill it. Route: skywork-ppt template workflow or pptx OOXML.",
+      "files": ["company-template.pptx"],
+      "assertions": [
+        {"name": "template_analyzed", "type": "qualitative", "criteria": "Reads the template to extract layout structure, color palette, font families, and placeholder positions before filling content"},
+        {"name": "template_style_preserved", "type": "qualitative", "criteria": "Output uses the template's original fonts, colors, and master slide layouts — no new styles introduced"},
+        {"name": "content_landing_zones", "type": "content_check"},
+        {"name": "content_ai_pocs", "type": "content_check"},
+        {"name": "content_community", "type": "content_check"},
+        {"name": "output_is_pptx", "type": "file_check"}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我要做一个Azure AI Services的hands-on workshop，大概3小时，目标是让参加者自己动手搭建一个简单的document intelligence + AI search的pipeline。需要包含step-by-step的操作截图和代码片段。做成HTML slides方便现场展示。",
+      "expected_output": "Should produce HTML slides with step-by-step instructions, code snippets, and screenshot placeholders. Route: frontend-slides for workshop format.",
+      "files": [],
+      "assertions": [
+        {"name": "correct_format_html", "type": "file_check"},
+        {"name": "step_by_step_instructions", "type": "content_check"},
+        {"name": "code_snippets_present", "type": "content_check"},
+        {"name": "hands_on_exercises", "type": "qualitative", "criteria": "Contains clearly marked 'try it yourself' sections with specific instructions participants can follow independently"},
+        {"name": "time_pacing", "type": "qualitative", "criteria": "Content is structured into logical sections that can fit a 3-hour workshop; includes breaks or transition points"}
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "帮我快速做3页slides，内容是Azure Well-Architected Framework的5个pillar概述，给明天内部standup用，不需要太花哨。",
+      "expected_output": "Should use lightweight path (< 5 slides). Minimal planning, no parallel agents. Quick turnaround with simple styling.",
+      "files": [],
+      "assertions": [
+        {"name": "lightweight_execution", "type": "qualitative", "criteria": "Uses simplified single-pass workflow without spawning parallel agents or generating separate diagram files; completes with minimal overhead"},
+        {"name": "slide_count_exact", "type": "quantitative"},
+        {"name": "five_pillars_covered", "type": "content_check"},
+        {"name": "output_exists", "type": "file_check"}
+      ]
+    }
+  ]
+}
