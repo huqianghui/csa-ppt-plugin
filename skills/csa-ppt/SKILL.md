@@ -71,6 +71,10 @@ If the topic needs research (web search, Azure docs), do the research, then:
 **Call Write tool** → file_path: `outputs/{project}/findings.md`
 Content: Structured research findings (topics, key points, terminology).
 
+**Then immediately update task_plan.md:**
+**Call Edit tool** → mark Phase 1 research tasks as `[x]` in `outputs/{project}/task_plan.md`
+**Call Edit tool** → append to `outputs/{project}/progress.md`: "Phase 1 complete. findings.md written."
+
 ### Step 5 → PRE-CHECK before EVERY phase
 
 **Before starting ANY phase (diagrams, slides, assembly, review), run this check:**
@@ -92,13 +96,18 @@ Additionally, each phase must READ the outputs of previous phases:
 ### Step 6 → Create diagrams and slides (ONLY after Step 5 passes)
 
 Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
-After creating EACH artifact, immediately write it to the workspace:
 
-- Each diagram → `outputs/{project}/diagrams/{name}.png`
-- Each slide → `outputs/{project}/slides/slide-{N}.{pptx|html}`
-- Each speaker note → `outputs/{project}/slides/slide-{N}-notes.md`
-- After each slide → Edit `task_plan.md` to mark `[x]`
-- After each slide → Append to `progress.md`
+**AFTER EVERY artifact, update task_plan.md immediately:**
+
+- Each diagram → Write to `outputs/{project}/diagrams/{name}.png`
+  → **Edit `task_plan.md`**: mark this diagram task `[x]`
+  → **Append to `progress.md`**: "Diagram {name}.png generated."
+- Each slide → Write to `outputs/{project}/slides/slide-{N}.{pptx|html}`
+  → Write speaker notes to `outputs/{project}/slides/slide-{N}-notes.md`
+  → **Edit `task_plan.md`**: mark this slide task `[x]`
+  → **Append to `progress.md`**: "Slide N complete."
+- After ALL diagrams done → **Edit `task_plan.md`**: mark Phase 2 status as complete
+- After ALL slides done → **Edit `task_plan.md`**: mark Phase 3 status as complete
 
 **RULE: If you are about to run a python3/node script but `task_plan.md` does not exist yet, STOP and go back to Step 1.**
 
