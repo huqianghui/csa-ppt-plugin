@@ -37,14 +37,15 @@ This agent is the primary production worker. It follows the Style Contract exact
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Slides are saved to `{workspace_path}/slides/`.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). Slides are saved to `{workspace_path}/slides/`.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files.
 - **slide_specs**: List of slides to build, each with:
   - Slide number and title
   - Content outline (bullet points, key messages)
   - Layout type (title, content, two-column, diagram, code)
   - Diagram references (if any — paths to pre-generated images)
 - **output_format**: The tool chain to use (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
-- **sub_skill_path**: Path to the relevant sub-skill SKILL.md
+- **sub_skill_path**: Absolute path to the relevant sub-skill SKILL.md (e.g., `{skill_root_path}/pptx/SKILL.md`)
 - **reference_slides**: (optional) Paths to already-completed slides for visual consistency
 
 Read `{workspace_path}/style_contract.md` for the full Style Contract.

@@ -10,7 +10,8 @@ The Review Agent is an independent quality reviewer spawned after all slides are
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads deck from `{workspace_path}/final/`, writes review report to `{workspace_path}/final/review_report.md`.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). Reads deck from `{workspace_path}/final/`, writes review report to `{workspace_path}/final/review_report.md`.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files if needed.
 - **review_round**: Which iteration this is (1 or 2)
 
 Read `{workspace_path}/style_contract.md` for the locked Style Contract.
@@ -57,6 +58,19 @@ For Round 2, also read `{workspace_path}/final/review_report.md` (the Round 1 re
 1. Read the HTML file(s) and associated CSS
 2. Extract text content, CSS color variables, font-family rules
 3. Check for inline styles that may override CSS variables
+4. **Viewport fitting check** (CRITICAL for frontend-slides):
+   - Verify each slide section uses `height: 100vh` or `height: 100dvh`
+   - Verify no slide exceeds content density limits (see frontend-slides SKILL.md)
+   - Check that no slide has `overflow: scroll` or `overflow: auto`
+   - Verify `max-height` constraints exist for content containers
+5. **CJK rendering check** (if Chinese content):
+   - Verify font-family includes CJK-capable fonts (e.g., "Microsoft YaHei", "PingFang SC", "Noto Sans CJK")
+   - Check that no characters are likely to render as tofu (missing glyphs)
+   - Verify line-height is sufficient for CJK characters (recommend >= 1.6)
+6. **Code block check** (if code slides exist):
+   - Verify syntax highlighting is applied (not plain text)
+   - Check that code blocks have appropriate font-size (>= 14px)
+   - Verify code does not overflow its container horizontally
 
 ### Step 4: Evaluate Each Slide (7 Dimensions)
 

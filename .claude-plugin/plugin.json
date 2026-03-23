@@ -1,10 +1,47 @@
 {
   "name": "csa-ppt",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "All-in-one presentation toolkit for Cloud Solution Architects (Azure/AWS/GCP). Includes: csa-ppt (smart orchestrator), azure-diagrams (700+ cloud icons), excalidraw-diagram (hand-drawn style), frontend-slides (HTML presentations), pptx (OOXML PowerPoint), skywork-ppt (quick PPT generation). Covers customer demos, tech sharing, workshops, architecture reviews, and template filling.",
   "author": {
     "name": "huqianghui",
     "url": "https://github.com/huqianghui"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "skills": [
+    {
+      "name": "csa-ppt",
+      "path": "skills/csa-ppt",
+      "description": "Smart orchestrator — analyzes requests and routes to the best tool chain"
+    },
+    {
+      "name": "azure-diagrams",
+      "path": "skills/azure-diagrams",
+      "description": "700+ cloud icons (Azure/AWS/GCP), architecture diagrams, swimlane flows, ERDs, timelines"
+    },
+    {
+      "name": "excalidraw-diagram",
+      "path": "skills/excalidraw-diagram",
+      "description": "Hand-drawn style diagrams for brainstorming and conceptual visuals"
+    },
+    {
+      "name": "frontend-slides",
+      "path": "skills/frontend-slides",
+      "description": "Zero-dependency HTML presentations, great for Chinese content and code"
+    },
+    {
+      "name": "pptx",
+      "path": "skills/pptx",
+      "description": "Full OOXML-level PowerPoint creation and editing"
+    },
+    {
+      "name": "skywork-ppt",
+      "path": "skills/skywork-ppt",
+      "description": "Quick PowerPoint generation, template-based creation, and slide operations"
+    },
+    {
+      "name": "planning-with-files",
+      "path": "skills/planning-with-files",
+      "description": "Task planning with file-based progress tracking for multi-slide decks"
+    }
+  ]
 }

@@ -32,7 +32,7 @@
       "id": 3,
       "prompt": "HR给了我一个公司模板 company-template.pptx，让我做一个关于我过去一个季度工作成果的分享，包括帮客户做了3个Azure landing zone部署、2个AI项目POC、还有一些社区分享。帮我填好这个模板。",
       "expected_output": "Should analyze template then fill it. Route: skywork-ppt template workflow or pptx OOXML.",
-      "files": ["company-template.pptx"],
+      "files": ["csa-ppt-workspace/company-template.pptx"],
       "assertions": [
         {"name": "template_analyzed", "type": "qualitative", "criteria": "Reads the template to extract layout structure, color palette, font families, and placeholder positions before filling content"},
         {"name": "template_style_preserved", "type": "qualitative", "criteria": "Output uses the template's original fonts, colors, and master slide layouts — no new styles introduced"},

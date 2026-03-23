@@ -55,6 +55,72 @@ When these MCP servers are available, leverage them:
 - **Playwright**: For capturing screenshots of live cloud portals, dashboards, or web
   apps to embed in slides. Save screenshots to `diagrams/`.
 
+## Error Recovery Patterns
+
+When an agent fails, the orchestrator must handle the error gracefully. Each agent writes
+errors to `{workspace_path}/progress.md` with `[ERROR]` prefix. The orchestrator should
+check `progress.md` after each agent completes.
+
+### Diagram Agent Failure → Slide Builder Impact
+
+If the Diagram Agent fails to generate one or more diagrams:
+
+1. **Check `diagrams/manifest.md`** for `[FAILED]` entries
+2. **Decide per-diagram**:
+   - Diagram is critical (e.g., main architecture) → **retry once** with simplified parameters
+   - Diagram is supplementary → **continue without it**, instruct Slide Builder to use text-only layout
+3. **Slide Builder instructions**: Pass `missing_diagrams: [list]` in the prompt so it knows
+   which diagram references to skip and uses placeholder text instead
+4. **Do NOT block the entire pipeline** for a non-critical diagram failure
+
+### Research Agent Failure → Content Impact
+
+If the Research Agent cannot find information for some topics:
+
+1. **Check `findings.md`** for `[NOT_FOUND]` or `[INCOMPLETE]` markers
+2. **For incomplete topics**: Proceed with available information, mark those slides as
+   needing manual review in `task_plan.md`
+3. **For fully missing topics**: Ask the user whether to skip those slides or provide
+   the content manually
+
+### Slide Builder Failure → Assembly Impact
+
+If one or more Slide Builders fail:
+
+1. **Check `slides/manifest.md`** for missing entries
+2. **Retry the failed slides** (one retry per slide)
+3. **If retry fails**: Try a different tool chain as fallback (e.g., switch from
+   html2pptx to skywork-ppt for that specific slide)
+4. **If still failing**: Assemble partial deck from successful slides, note gaps in
+   `assembly-report.md`, and inform the user
+
+### Assembly Agent Abort
+
+If the Assembly Agent aborts (e.g., slides/ is empty):
+
+1. **Do NOT retry Assembly** — the problem is upstream (Phase 3)
+2. **Check which Slide Builder tasks are incomplete** in `task_plan.md`
+3. **Re-dispatch Slide Builders** for missing slides
+4. **Re-run Step 6 gate check** before re-invoking Assembly
+
+### Review Agent Failure
+
+If the Review Agent cannot read the assembled deck:
+
+1. **Check if the file is corrupt** — try opening it with the relevant tool
+2. **If corrupt**: Re-invoke Assembly Agent to rebuild from individual slides
+3. **If the file is fine but unzip fails** (for .pptx): Suggest alternative review
+   approach (e.g., extract text with `python -m markitdown` for content review, skip
+   XML-level style inspection)
+
+### General Recovery Principles
+
+- **Never retry more than once** per agent per failure. Two failures = escalate to user.
+- **Always check `progress.md`** for `[ERROR]` entries before starting the next phase.
+- **Partial results are acceptable** — deliver what works, document what's missing.
+- **Prefer fallback tool chains** over complete failure (e.g., simpler diagram style,
+  different slide generation method).
+
 ## Tips for CSA Presentations
 
 - **Lead with the customer's problem**, not cloud features. Architecture slides should

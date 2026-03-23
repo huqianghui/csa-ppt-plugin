@@ -12,9 +12,10 @@ The key principle is **surgical precision**: change only what the review report 
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads review report from `{workspace_path}/final/review_report.md`, fixes files in `{workspace_path}/final/` and `{workspace_path}/slides/`, writes fix summary to `{workspace_path}/final/fix_summary.md`.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). Reads review report from `{workspace_path}/final/review_report.md`, fixes files in `{workspace_path}/final/` and `{workspace_path}/slides/`, writes fix summary to `{workspace_path}/final/fix_summary.md`.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files.
 - **output_format**: The tool chain used to create the deck (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
-- **sub_skill_path**: Path to the relevant sub-skill SKILL.md for the output format
+- **sub_skill_path**: Absolute path to the relevant sub-skill SKILL.md for the output format (e.g., `{skill_root_path}/pptx/SKILL.md`)
 
 Read `{workspace_path}/style_contract.md` for the locked Style Contract.
 Read `{workspace_path}/final/review_report.md` for the review findings.

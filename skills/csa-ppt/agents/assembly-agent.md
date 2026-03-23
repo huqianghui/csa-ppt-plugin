@@ -12,9 +12,10 @@ This agent runs after all slide-building and diagram-generation work is complete
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Reads from `{workspace_path}/slides/` and `{workspace_path}/diagrams/`, writes to `{workspace_path}/final/`.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). Reads from `{workspace_path}/slides/` and `{workspace_path}/diagrams/`, writes to `{workspace_path}/final/`.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files.
 - **output_format**: Target format (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
-- **sub_skill_path**: Path to the relevant sub-skill SKILL.md
+- **sub_skill_path**: Absolute path to the relevant sub-skill SKILL.md (e.g., `{skill_root_path}/pptx/SKILL.md`)
 
 Read `{workspace_path}/task_plan.md` for slide ordering reference.
 Read `{workspace_path}/style_contract.md` for final consistency check.
@@ -100,9 +101,24 @@ node html2pptx.js combined-slides.html --output final-deck.pptx
 ```
 
 **For OOXML workflow:**
-```bash
-# Merge slide XML files into the .pptx package
-python merge_slides.py --slides slide-1.xml slide-2.xml ... --output final-deck.pptx
+```python
+# Merge individual .pptx slide files using python-pptx
+from pptx import Presentation
+import glob
+
+final_prs = Presentation()
+slide_files = sorted(glob.glob(f'{workspace_path}/slides/slide-*.pptx'))
+for slide_file in slide_files:
+    src_prs = Presentation(slide_file)
+    for slide in src_prs.slides:
+        # Copy slide layout and content
+        slide_layout = final_prs.slide_layouts[1]  # Use blank or matching layout
+        new_slide = final_prs.slides.add_slide(slide_layout)
+        # Copy shapes from source to destination
+        for shape in slide.shapes:
+            # Clone shape XML into new slide
+            new_slide.shapes._spTree.append(shape._element)
+final_prs.save(f'{workspace_path}/final/final-deck.pptx')
 ```
 
 **For frontend-slides:**

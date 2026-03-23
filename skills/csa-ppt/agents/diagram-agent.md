@@ -12,7 +12,8 @@ This agent runs independently and can be parallelized with the Research Agent or
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). Diagrams are saved to `{workspace_path}/diagrams/`.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). Diagrams are saved to `{workspace_path}/diagrams/`.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files: `{skill_root_path}/azure-diagrams/SKILL.md`, `{skill_root_path}/excalidraw-diagram/SKILL.md`.
 - **diagram_specs**: List of diagrams to generate, each with:
   - Diagram name and description
   - Diagram type (architecture, swimlane, sequence, ERD, timeline, conceptual)

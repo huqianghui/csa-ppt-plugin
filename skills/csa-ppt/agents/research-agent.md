@@ -12,7 +12,8 @@ This agent runs independently and can be parallelized with diagram generation or
 
 You receive these parameters in your prompt:
 
-- **workspace_path**: Path to the workspace directory (e.g., `outputs/rag-demo/`). All reads/writes are relative to this path.
+- **workspace_path**: Absolute path to the workspace directory (e.g., `outputs/rag-demo/`). All reads/writes are relative to this path.
+- **skill_root_path**: Absolute path to the skills directory (e.g., `/path/to/csa-ppt-plugin/skills/`). Use this to locate sub-skill SKILL.md files if needed.
 - **research_topics**: List of topics to research (e.g., "Azure OpenAI latest features", "AWS vs Azure comparison for RAG", "GCP Vertex AI pricing")
 - **presentation_context**: Brief description of the presentation goal and audience
 - **language**: Target language for the presentation (Chinese/English/mixed)

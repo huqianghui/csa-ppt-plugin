@@ -11,6 +11,10 @@ description: >
   Chinese-language slide content. This skill covers ALL presentation-related work — from
   a quick internal deck to a polished customer-facing solution demo with architecture
   diagrams.
+metadata:
+  author: huqianghui
+  version: "1.0.9"
+  license: MIT
 ---
 
 # CSA Presentation Skill
@@ -141,10 +145,17 @@ needed — the orchestrator tracks progress directly.
 
 ### Step 0.5: CHECKPOINT — Verify files exist
 
+**For standard/large requests (5+ slides):**
 ```bash
 ls -la outputs/{project}/task_plan.md outputs/{project}/style_contract.md outputs/{project}/progress.md
 ```
-If ANY file is missing, go back to Step 0. **Do NOT proceed until all files are confirmed.**
+If ANY file is missing, go back to Step 0.
+
+**For simple requests (< 5 slides):**
+```bash
+ls -la outputs/{project}/task_plan.md
+```
+Only `task_plan.md` is required (style rules are inline). **Do NOT proceed until confirmed.**
 
 ### Workspace Directory Structure
 
@@ -174,10 +185,9 @@ outputs/{project-name}/
 
 ---
 
-## Planning Workflow
+## Execution Steps (1–8)
 
-Before creating any presentation, initialize the workspace (Step 0 above), then create
-the plan. See `references/templates.md` for full task_plan and style_contract templates.
+> See `references/templates.md` for full task_plan and style_contract templates.
 
 ### Step 1: Create the Slide Plan
 
@@ -188,7 +198,10 @@ per slide or logical chapter. The plan must include:
 - **Style Contract**: Color palette, fonts, language, density rules, output format
 - **Phases**: Research → Diagrams → Slides → Assembly → Review, each with checkboxes
 
-### Step 2: Lock the Style Contract
+For simple requests (< 5 slides), use the lightweight variant from `references/templates.md`
+with style rules inline in `task_plan.md`.
+
+### Step 2: Lock the Style Contract (5+ slides only)
 
 For 5+ slide decks, **write `style_contract.md`** as a standalone file so every sub-agent
 can read it directly without parsing task_plan.md. See `references/templates.md` for the
@@ -196,6 +209,8 @@ template.
 
 **Every sub-agent prompt must include**: "Read `style_contract.md` at
 `outputs/{project-name}/style_contract.md` for all styling rules."
+
+For simple requests (< 5 slides): skip this step — style rules are inline in `task_plan.md`.
 
 ### Step 3: Research (if needed) → Write findings to file
 
@@ -205,23 +220,29 @@ If the topic needs research (web search, cloud docs), do the research, then:
 
 **Then immediately update task_plan.md** (Rule 3):
 - Mark Phase 1 research tasks as `[x]`
-- Append to `progress.md`: "Phase 1 complete. findings.md written."
+- Append to `progress.md`: "Phase 1 complete. findings.md written." (5+ slides only)
 
 ### Step 4: PRE-CHECK before EVERY phase
 
 **Before starting ANY phase (diagrams, slides, assembly, review), run this check:**
 
+**For standard/large requests (5+ slides):**
 ```bash
 ls outputs/{project}/task_plan.md outputs/{project}/style_contract.md
 ```
-
 If either file is missing → STOP → go back to Step 0 and create them.
 
+**For simple requests (< 5 slides):**
+```bash
+ls outputs/{project}/task_plan.md
+```
+Only `task_plan.md` is required.
+
 Additionally, each phase must READ the outputs of previous phases:
-- Before diagrams → READ `task_plan.md` + `style_contract.md`
-- Before slides → READ `task_plan.md` + `style_contract.md` + `findings.md` (if exists) + check `diagrams/`
+- Before diagrams → READ `task_plan.md` + `style_contract.md` (or inline style in task_plan.md)
+- Before slides → READ `task_plan.md` + `style_contract.md` (if exists) + `findings.md` (if exists) + check `diagrams/`
 - Before assembly → READ `task_plan.md` + check `slides/` directory
-- Before review → READ `style_contract.md` + check `final/` directory
+- Before review → READ `style_contract.md` (or task_plan.md for simple) + check `final/` directory
 
 **If a required input file does not exist, do NOT proceed. Create it first.**
 
@@ -249,7 +270,7 @@ for n in range(1, slide_count + 1):
 
 **AFTER EVERY artifact, update task_plan.md immediately** (Rule 3).
 
-### Step 5.5: ⛔ MANDATORY GATE — Verify slides/ before assembly
+### Step 6: ⛔ MANDATORY GATE — Verify slides/ before assembly
 
 **This gate is a HARD CONSTRAINT. Assembly CANNOT begin until it passes.**
 
@@ -268,7 +289,7 @@ ls -la outputs/{project}/slides/
 **If you find yourself about to create a single Presentation() object and save it directly
 to `final/`, you are violating this gate. STOP and restructure.**
 
-### Step 6: Assembly (Phase 4) — ONLY after Step 5.5 gate passes
+### Step 7: Assembly (Phase 4) — ONLY after Step 6 gate passes
 
 Spawn the **Assembly Agent** to merge individual slides into the final deck.
 Read `agents/assembly-agent.md` for the full assembly protocol.
@@ -277,7 +298,7 @@ Read `agents/assembly-agent.md` for the full assembly protocol.
 - Mark Phase 4 tasks as `[x]` in task_plan.md
 - Append to `progress.md`: "Phase 4 complete. Final deck assembled."
 
-### Step 7: Review & Fix (Phase 5) — ONLY after assembly is complete
+### Step 8: Review & Fix (Phase 5) — ONLY after assembly is complete
 
 Read `agents/review-agent.md` for the full review protocol. Max 2 rounds.
 
@@ -287,7 +308,10 @@ Read `agents/review-agent.md` for the full review protocol. Max 2 rounds.
 - After Round 2: PASS → deliver; NEEDS_FIX → mark as KNOWN_ISSUES, deliver with report
 - Do NOT loop a third time
 
-### Step 8: Parallel Execution (10+ slides, optional)
+**For simple requests (< 5 slides):** Skip the formal Review Agent. Do a quick self-check
+instead (see Scaling by Complexity table above).
+
+### Parallel Execution (10+ slides, optional)
 
 For large presentations, use multiple sub-agents to build different chapters simultaneously.
 
@@ -295,10 +319,11 @@ For large presentations, use multiple sub-agents to build different chapters sim
 **Must be sequential:** Title/agenda (first), final assembly (last).
 
 Each sub-agent MUST receive in its prompt:
-1. The **workspace_path** (e.g., `outputs/rag-demo/`)
-2. Instruction to **read `style_contract.md`** from the workspace
-3. The **sub-skill path** to read (e.g., `../pptx/SKILL.md`)
-4. The **agent instructions** to read (e.g., `agents/slide-builder-agent.md`)
+1. The **workspace_path** — absolute path (e.g., `/full/path/to/outputs/rag-demo/`)
+2. The **skill_root_path** — absolute path to the skills directory so agents can find sub-skill SKILL.md files (e.g., `/full/path/to/csa-ppt-plugin/skills/`)
+3. Instruction to **read `style_contract.md`** from the workspace (or `task_plan.md` for simple requests)
+4. The **sub-skill path** to read (e.g., `{skill_root_path}/pptx/SKILL.md`)
+5. The **agent instructions** to read (e.g., `agents/slide-builder-agent.md`)
 
 ---
 
@@ -322,8 +347,8 @@ Do NOT re-run the full 5-phase pipeline for incremental changes.
 
 ## Decision Framework
 
-> ⛔ **PREREQUISITE**: Before using this framework, `task_plan.md` and `style_contract.md`
-> MUST already exist on disk. If they don't, go back to Step 0.
+> ⛔ **PREREQUISITE**: Before using this framework, `task_plan.md` MUST already exist on
+> disk. For 5+ slide decks, `style_contract.md` must also exist. If not, go back to Step 0.
 
 Analyze the request along these dimensions, then route accordingly:
 
