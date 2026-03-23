@@ -22,7 +22,7 @@ from diagrams import Diagram, Cluster
 from diagrams.azure.compute import AKS
 from diagrams.azure.database import CosmosDb
 
-with Diagram("My Architecture", filename="/mnt/user-data/outputs/diagram", show=False):
+with Diagram("My Architecture", filename="outputs/{project}/diagrams/diagram", show=False):
     AKS("aks-prod") >> CosmosDb("cosmos-prod")
 
 EOF
@@ -79,9 +79,14 @@ See `references/iac-to-diagram.md` for detailed prompts and examples.
 
 ```bash
 pip install diagrams matplotlib --break-system-packages
-apt-get install -y graphviz  # Ubuntu/Debian
-# or: brew install graphviz  # macOS
-# or: choco install graphviz  # Windows
+
+# Install graphviz (pick your platform):
+# macOS:
+brew install graphviz
+# Ubuntu/Debian:
+# apt-get install -y graphviz
+# Windows:
+# choco install graphviz
 ```
 
 ## Quick Start
@@ -310,10 +315,16 @@ See `references/preventing-overlaps.md` for detailed guidance.
 
 ## Output Location
 
-For Claude Code / GitHub Copilot, save to outputs:
+When called from the **csa-ppt orchestrator**, save diagrams to the workspace:
 ```python
-with Diagram("Name", show=False, filename="/mnt/user-data/outputs/diagram"):
-    # ... 
+with Diagram("Name", show=False, filename="outputs/{project}/diagrams/{diagram-name}"):
+    # ...
+```
+
+When used standalone, save to any convenient path:
+```python
+with Diagram("Name", show=False, filename="my-diagram"):
+    # ...
 ```
 
 ## ⚠️ CRITICAL: Professional Output Standards

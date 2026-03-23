@@ -129,16 +129,15 @@ For each slide, self-check:
 ## Slides Produced
 | Slide | Format | Title | Why This Format |
 |-------|--------|-------|-----------------|
-| slide-3.pptx | pptx | "客户痛点" (Customer Challenges) | Simple bullets, mostly English terms |
-| slide-4.pptx | pptx | "方案概览" (Solution Overview) | Standard layout with diagram |
-| slide-5.html | html | "架构详解" (Architecture Deep-Dive) | Complex layout with annotations |
+| slide-{N}.pptx | pptx | "{slide title from task_plan}" | {reason for format choice} |
+| slide-{N}.pptx | pptx | "{slide title from task_plan}" | {reason for format choice} |
+| slide-{N}.html | html | "{slide title from task_plan}" | {reason for format choice} |
 
 ## Diagrams Embedded
-- slide-4.pptx references: diagrams/rag-architecture.png
+- slide-{N}.{ext} references: diagrams/{diagram-name}.png
 
 ## Notes
-- Slide 4 had 8 bullets in the spec, consolidated to 6 per density rules
-- Moved 2 items to speaker notes for slide 4
+- {Any content consolidation, density adjustments, or deviations from spec}
 ```
 
 The Assembly Agent reads this manifest to know how to process each slide file.
@@ -173,3 +172,13 @@ Follow the sub-skill's HTML generation workflow (frontend-slides or html2pptx).
 - **Speaker notes are valuable.** Use them for extra context, presenter talking points, and overflow content. They're not a dumping ground.
 - **Self-check before output.** Run through the validation checklist (Step 5) for every slide. A slide that fails review wastes a full review cycle.
 - **Be explicit about changes.** If you deviated from the spec (e.g., consolidated bullets), document it in the manifest.
+
+## ⛔ Rule 3 Compliance: Update task_plan.md
+
+**After completing EACH slide, you MUST update the workspace files:**
+
+1. **Edit `outputs/{project}/task_plan.md`** — mark each slide task as `[x]`
+2. **Append to `outputs/{project}/progress.md`** — "Slide N complete. Format: {pptx|html}."
+3. After ALL assigned slides are done, update Phase 3 status if applicable.
+
+This enables session resume if interrupted. Do NOT skip this step.

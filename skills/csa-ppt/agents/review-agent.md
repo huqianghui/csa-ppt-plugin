@@ -172,3 +172,12 @@ Write `review_report.md` with this structure:
 - **Round 2 is for convergence.** Only check Round 1 FIX items. Don't re-evaluate passing dimensions. Don't add new issues.
 - **Max 2 rounds.** After Round 2, any remaining issues become KNOWN_ISSUES. The deck ships with them documented.
 - **Be fair.** The goal is a quality presentation, not a perfect one. Score 8/10 is good enough to deliver.
+
+## ⛔ Rule 3 Compliance: Update task_plan.md
+
+**After completing the review, you MUST update the workspace files:**
+
+1. **Edit `outputs/{project}/task_plan.md`** — mark review tasks as `[x]` in Phase 5
+2. **Append to `outputs/{project}/progress.md`** — "Phase 5 review Round {N} complete. Verdict: {PASS|NEEDS_FIX}."
+
+This enables session resume if interrupted. Do NOT skip this step.

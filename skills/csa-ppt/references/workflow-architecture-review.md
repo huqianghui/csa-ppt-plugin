@@ -1,5 +1,9 @@
 # Architecture Review (CAF/WAF) Workflow
 
+> **Prerequisites**: Before starting, ensure the **Three Inviolable Rules** from SKILL.md are followed:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — create workspace `outputs/{project}/` first),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 Architecture reviews require structured assessment against Azure's Well-Architected
 Framework and Cloud Adoption Framework. The output is usually a mix of diagrams and a
 formal assessment deck.

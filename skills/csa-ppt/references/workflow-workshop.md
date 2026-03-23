@@ -1,5 +1,9 @@
 # Workshop / Hands-on Lab Workflow
 
+> **Prerequisites**: Before starting, ensure the **Three Inviolable Rules** from SKILL.md are followed:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — create workspace `outputs/{project}/` first),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 Workshop materials need to be action-oriented with clear step-by-step instructions.
 Participants follow along on their own machines.
 

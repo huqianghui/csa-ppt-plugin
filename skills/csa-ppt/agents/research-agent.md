@@ -151,6 +151,15 @@ Save structured findings to `{output_path}/findings.md`:
 2. [Title](URL) — accessed YYYY-MM-DD
 ```
 
+## ⛔ Rule 3 Compliance: Update task_plan.md
+
+**After completing research, you MUST update the workspace files:**
+
+1. **Edit `outputs/{project}/task_plan.md`** — mark Phase 1 research tasks as `[x]`
+2. **Append to `outputs/{project}/progress.md`** — "Phase 1 complete. findings.md written with N topics."
+
+This enables session resume if interrupted. Do NOT skip this step.
+
 ## Guidelines
 
 - **Prefer official sources.** Azure docs > blog posts > third-party articles.

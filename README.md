@@ -116,7 +116,7 @@ written to disk so you can **review, edit, or adjust** them at any point before 
 deck is assembled.
 
 ```
-outputs/{project-name}/
+outputs/{project}/
 ├── task_plan.md              ← Slide plan with checkboxes — edit to reorder/add/remove slides
 ├── progress.md               ← Session log — see what's been done and what's next
 ├── style_contract.md         ← Colors, fonts, layout rules — edit to change the look
@@ -168,6 +168,7 @@ csa-ppt-plugin/
 │   │   │   ├── review-agent.md
 │   │   │   └── fix-agent.md
 │   │   └── references/          # Workflow guides per scenario
+│   │       ├── orchestration-and-mcp.md
 │   │       ├── workflow-customer-demo.md
 │   │       ├── workflow-tech-sharing.md
 │   │       ├── workflow-workshop.md

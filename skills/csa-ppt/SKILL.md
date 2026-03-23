@@ -131,7 +131,7 @@ If either file is missing → STOP → go back to Step 1 and create them.
 
 Additionally, each phase must READ the outputs of previous phases:
 - Before diagrams → READ `task_plan.md` + `style_contract.md`
-- Before slides → READ `task_plan.md` + `style_contract.md` + `findings.md` + check `diagrams/`
+- Before slides → READ `task_plan.md` + `style_contract.md` + `findings.md` (if exists) + check `diagrams/`
 - Before assembly → READ `task_plan.md` + check `slides/` directory
 - Before review → READ `style_contract.md` + check `final/` directory
 
@@ -169,9 +169,9 @@ templates from event organizers or HR that need to be filled with content.
 | Phase | MUST Write (output files) | MUST Read (input files) |
 |-------|--------------------------|------------------------|
 | Phase 0: Init | `task_plan.md`, `progress.md`, `style_contract.md` | — |
-| Phase 1: Research | `findings.md` | `task_plan.md` |
+| Phase 1: Research (if needed) | `findings.md` | `task_plan.md` |
 | Phase 2: Diagrams | `diagrams/*.png`, `diagrams/manifest.md` | `task_plan.md`, `style_contract.md` |
-| Phase 3: Slides | `slides/slide-{N}.{pptx\|html}`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md`, `diagrams/` |
+| Phase 3: Slides | `slides/slide-{N}.{pptx\|html}`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md` (if exists), `diagrams/` |
 | Phase 4: Assembly | `final/final-deck.{pptx\|html}`, `final/assembly-report.md` | `slides/`, `diagrams/`, `task_plan.md` |
 | Phase 5: Review | `final/review_report.md`, `final/fix_summary.md` | `final/final-deck.*`, `style_contract.md` |
 
@@ -275,7 +275,7 @@ Rule 1 answers and the user's request. Do NOT copy example values blindly.**
 ```
 
 **Every sub-agent prompt must include**: "Read `style_contract.md` at
-`outputs/{project-name}/style_contract.md` for all styling rules."
+`outputs/{project}/style_contract.md` for all styling rules."
 
 ### Per-Phase File Write Commands
 
@@ -284,7 +284,7 @@ After completing each task, use these exact commands:
 **Phase 1 — Research:**
 ```
 # After research is done, WRITE to disk:
-Write findings.md → outputs/{project-name}/findings.md
+Write findings.md → outputs/{project}/findings.md
 Edit task_plan.md → mark research tasks [x]
 Append to progress.md → "Phase 1 complete. findings.md written with N topics."
 ```
@@ -292,8 +292,8 @@ Append to progress.md → "Phase 1 complete. findings.md written with N topics."
 **Phase 2 — Diagrams:**
 ```
 # After each diagram is generated, WRITE to disk:
-Save PNG → outputs/{project-name}/diagrams/{name}.png
-Write manifest → outputs/{project-name}/diagrams/manifest.md
+Save PNG → outputs/{project}/diagrams/{name}.png
+Write manifest → outputs/{project}/diagrams/manifest.md
 Edit task_plan.md → mark diagram tasks [x]
 Append to progress.md → "Phase 2 complete. N diagrams saved to diagrams/."
 ```
@@ -308,14 +308,81 @@ The Assembly Agent handles mixed formats during merge.
 
 ```
 # After each slide is built, WRITE to disk:
-Save slide → outputs/{project-name}/slides/slide-{N}.{pptx|html}  (format chosen by content)
-Save notes → outputs/{project-name}/slides/slide-{N}-notes.md
-Write manifest → outputs/{project-name}/slides/manifest.md  (must record format per slide)
+Save slide → outputs/{project}/slides/slide-{N}.{pptx|html}  (format chosen by content)
+Save notes → outputs/{project}/slides/slide-{N}-notes.md
+Write manifest → outputs/{project}/slides/manifest.md  (must record format per slide)
 Edit task_plan.md → mark slide task [x]
 Append to progress.md → "Slide N complete. Format: {pptx|html}."
 ```
 
-### Step 4: Parallel Execution (Optional)
+### Step 7 → Assembly (Phase 4) — ONLY after all slides and diagrams are complete
+
+Spawn the **Assembly Agent** to merge individual slides into the final deck.
+Read `agents/assembly-agent.md` for the full assembly protocol.
+
+```
+Assembly Agent: "Merge all slides and diagrams into the final deck.
+  Workspace: outputs/{project}/
+  READ task_plan.md from: outputs/{project}/task_plan.md
+  READ slides from: outputs/{project}/slides/
+  READ diagrams from: outputs/{project}/diagrams/
+  WRITE final deck to: outputs/{project}/final/final-deck.{pptx|html}
+  WRITE assembly report to: outputs/{project}/final/assembly-report.md
+  Instructions: Read agents/assembly-agent.md for the assembly protocol."
+```
+
+**After assembly:**
+**Call Edit tool** → mark Phase 4 tasks as `[x]` in `outputs/{project}/task_plan.md`
+**Append to `progress.md`**: "Phase 4 complete. Final deck assembled."
+
+### Step 8 → Review & Fix (Phase 5) — ONLY after assembly is complete
+
+Read `agents/review-agent.md` for the full review protocol. Max 2 rounds.
+
+**Round 1 — Full Review:**
+```
+Review Agent: "Review the assembled presentation for quality and consistency.
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ deck from: outputs/{project}/final/final-deck.{pptx|html}
+  Review round: 1
+  WRITE review_report.md to: outputs/{project}/final/review_report.md
+  Instructions: Read agents/review-agent.md for the full review protocol."
+```
+
+**Apply Fixes (if verdict is NEEDS_FIX):**
+```
+Fix Agent: "Apply fixes from the review report.
+  Workspace: outputs/{project}/
+  READ review_report.md from: outputs/{project}/final/review_report.md
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ/WRITE deck: outputs/{project}/final/final-deck.{pptx|html}
+  WRITE fix_summary.md to: outputs/{project}/final/fix_summary.md
+  Instructions: Read agents/fix-agent.md for the fix protocol."
+```
+
+**Round 2 — Verify Fixes:**
+```
+Review Agent: "Verify Round 1 fixes were applied correctly.
+  Workspace: outputs/{project}/
+  READ style_contract.md from: outputs/{project}/style_contract.md
+  READ deck from: outputs/{project}/final/final-deck.{pptx|html}
+  READ previous review from: outputs/{project}/final/review_report.md
+  Review round: 2
+  WRITE updated review_report.md to: outputs/{project}/final/review_report.md
+  Instructions: Read agents/review-agent.md for the Round 2 protocol."
+```
+
+**After review:**
+- If PASS → deliver the deck
+- If NEEDS_FIX after Round 2 → mark remaining as KNOWN_ISSUES, deliver with report
+- Do NOT loop a third time
+- **Call Edit tool** → mark Phase 5 tasks as `[x]` in `outputs/{project}/task_plan.md`
+- **Append to `progress.md`**: "Phase 5 complete. Review verdict: {PASS|NEEDS_FIX}."
+
+---
+
+### Guidance: Parallel Execution (Optional, for 10+ slides)
 
 For large presentations (10+ slides), you can use multiple sub-agents to build different
 chapters simultaneously. The key rules for parallel execution:
@@ -370,59 +437,11 @@ Diagram Agent: "Generate architecture diagrams.
 
 After all sub-agents complete, assemble into the final deck in Phase 4.
 
-### Step 5: Review Loop (Phase 5)
+### Guidance: Review Details
 
-After assembly, spawn the **review agent** as a sub-agent to check the complete deck.
-Read `agents/review-agent.md` for the full review protocol.
-
-**Round 1 — Full Review:**
-```
-Review Agent: "Review the assembled presentation for quality and consistency.
-
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ deck from: outputs/{project}/final/final-deck.pptx
-  Review round: 1
-  Previous review: none
-  WRITE review_report.md to: outputs/{project}/final/review_report.md
-
-  Instructions: Read agents/review-agent.md for the full review protocol."
-```
-
-The review agent writes `review_report.md` to disk with per-slide PASS/FIX verdicts.
-
-**Apply Fixes:**
-If the overall verdict is NEEDS_FIX, spawn the Fix Agent:
-```
-Fix Agent: "Apply fixes from the review report.
-
-  Workspace: outputs/{project}/
-  READ review_report.md from: outputs/{project}/final/review_report.md
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ/WRITE deck: outputs/{project}/final/final-deck.pptx
-  WRITE fix_summary.md to: outputs/{project}/final/fix_summary.md
-
-  Instructions: Read agents/fix-agent.md for the fix protocol."
-```
-
-**Round 2 — Verify Fixes:**
-```
-Review Agent: "Verify that Round 1 fixes were applied correctly.
-
-  Workspace: outputs/{project}/
-  READ style_contract.md from: outputs/{project}/style_contract.md
-  READ deck from: outputs/{project}/final/final-deck.pptx
-  READ previous review from: outputs/{project}/final/review_report.md
-  Review round: 2
-  WRITE updated review_report.md to: outputs/{project}/final/review_report.md
-
-  Instructions: Read agents/review-agent.md for the Round 2 protocol."
-```
-
-**After Round 2:**
-- If PASS → deliver the deck
-- If NEEDS_FIX → mark remaining issues as KNOWN_ISSUES, deliver with the report
-- Do NOT loop a third time — the user decides what to fix manually
+See Step 8 above for the review and fix protocol. Key points:
+- Max 2 review rounds
+- After Round 2, remaining issues become KNOWN_ISSUES — the user decides what to fix manually
 
 ## Decision Framework
 
@@ -559,7 +578,7 @@ Phase 5: Review Agent (Round 2)
 
 Each sub-agent receives the **workspace path** so it can READ shared files
 (style_contract.md, findings.md) and WRITE outputs to the correct location.
-All files are in `outputs/{project-name}/`.
+All files are in `outputs/{project}/`.
 
 ## Quality Checklist
 

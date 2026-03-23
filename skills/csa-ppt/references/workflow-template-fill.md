@@ -1,5 +1,9 @@
 # Template Fill Workflow
 
+> **Prerequisites**: Before starting, ensure the **Three Inviolable Rules** from SKILL.md are followed:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — create workspace `outputs/{project}/` first),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 This is one of the most common CSA scenarios: you receive a .pptx template from an event
 organizer, HR, or a customer, and need to fill it with your content while preserving the
 template's visual identity.

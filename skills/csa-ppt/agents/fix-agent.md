@@ -133,3 +133,12 @@ Two files:
 - **Log everything.** The fix_summary.md must list every change so the Round 2 review can verify.
 - **Don't guess.** If a fix instruction is ambiguous, apply the most conservative interpretation. The Review Agent will catch anything missed in Round 2.
 - **Speaker notes are your friend.** When reducing content density, move the extra content to speaker notes rather than deleting it.
+
+## ⛔ Rule 3 Compliance: Update task_plan.md
+
+**After applying all fixes, you MUST update the workspace files:**
+
+1. **Edit `outputs/{project}/task_plan.md`** — mark fix tasks as `[x]` in Phase 5
+2. **Append to `outputs/{project}/progress.md`** — "Phase 5 fixes applied. {N} issues fixed. See fix_summary.md."
+
+This enables session resume if interrupted. Do NOT skip this step.

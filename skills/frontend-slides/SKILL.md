@@ -245,6 +245,34 @@ After generating, recommend the user test at these sizes:
 - Mobile: 375×667, 414×896
 - Landscape phone: 667×375, 896×414
 
+### CJK (Chinese/Japanese/Korean) Support
+
+When generating presentations with CJK content (Chinese, Japanese, Korean):
+
+**Font stack**: Use a CJK-friendly font stack that falls back gracefully:
+```css
+:root {
+    --font-display: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+```
+
+**Key considerations:**
+- CJK characters are wider than Latin — reduce max words per bullet to ~15 Chinese characters
+- Use `word-break: break-all` or `overflow-wrap: break-word` for long CJK strings
+- Line height should be slightly larger (1.6–1.8) for CJK text readability
+- Do NOT embed fonts via Google Fonts for CJK — file sizes are too large. Rely on system fonts.
+- Technical terms (Azure service names, API names) should stay in English within Chinese text
+
+**System font availability by platform:**
+| Platform | Available CJK Fonts |
+|----------|-------------------|
+| macOS | PingFang SC, Hiragino Sans GB, STHeiti |
+| Windows | Microsoft YaHei, SimHei, SimSun |
+| Linux | Noto Sans CJK SC (if installed) |
+
+**Mixed-language tip**: When mixing Chinese and English, set `lang="zh"` on the `<html>` tag for proper hyphenation and line-breaking behavior.
+
 ---
 
 ## Phase 0: Detect Mode

@@ -1,5 +1,9 @@
 # Orchestration Patterns & MCP Integration
 
+> **Prerequisites**: All orchestration patterns MUST follow the **Three Inviolable Rules** from SKILL.md:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — workspace at `outputs/{project}/`),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 ## Orchestration Patterns
 
 ### Pattern 1: Diagrams + Deck (most common)

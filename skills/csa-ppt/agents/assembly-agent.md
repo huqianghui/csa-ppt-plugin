@@ -51,7 +51,7 @@ Found:
   - outputs/slides/slide-8.pptx (format: pptx)
   - outputs/slides/slide-9.pptx (format: pptx)
   - outputs/slides/slide-10.pptx (format: pptx)
-  - outputs/diagrams/: rag-architecture.png, data-pipeline.png
+  - outputs/diagrams/: {diagram files from manifest}
 Missing: (none)
 Format mix: 7 x .pptx, 3 x .html
 ```
@@ -117,7 +117,8 @@ for slide_file in sorted_slide_files:
 (via html2pptx.js) before merging:
 ```bash
 # Convert any remaining .html slides to .pptx
-node html2pptx.js slides/slide-5.html --output slides/slide-5.pptx
+# html2pptx.js is located in the pptx sub-skill: skills/pptx/scripts/html2pptx.js
+node skills/pptx/scripts/html2pptx.js slides/slide-{N}.html --output slides/slide-{N}.pptx
 ```
 
 **For .html final output:**
@@ -169,8 +170,8 @@ Save alongside the output:
 # Assembly Report
 
 ## Output
-- File: outputs/final-deck.pptx
-- Format: PowerPoint (.pptx)
+- File: outputs/{project}/final/final-deck.{pptx|html}
+- Format: {PowerPoint (.pptx) | HTML}
 - Slides: 10
 - File size: 4.2 MB
 
@@ -181,26 +182,18 @@ Save alongside the output:
 ## Slide Order
 | # | Title | Intermediate Format | Conversion |
 |---|-------|-------------------|------------|
-| 1 | Title — "企业级RAG智能检索方案" | .pptx | none |
-| 2 | Agenda / 目录 | .pptx | none |
-| 3 | Customer challenges / 客户痛点 | .pptx | none |
-| 4 | Solution overview / 方案概览 | .pptx | none |
-| 5 | Architecture deep-dive / 架构详解 | .html | html→pptx |
-| 6 | Data pipeline / 数据处理流程 | .html | html→pptx |
-| 7 | Chinese document optimization / 中文文档优化 | .html | html→pptx |
-| 8 | Security & compliance / 安全合规 | .pptx | none |
-| 9 | Implementation roadmap / 实施路径 | .pptx | none |
-| 10 | Next steps / 下一步 | .pptx | none |
+| 1 | {title from task_plan} | .pptx | none |
+| 2 | {title from task_plan} | .pptx | none |
+| ... | ... | .html | html→pptx |
 
 ## Embedded Assets
-- rag-architecture.png → Slide 5
-- data-pipeline.png → Slide 6
+- {diagram-name}.png → Slide {N}
 
 ## Speaker Notes
-- Added to slides 3, 4, 5, 6, 7, 8
+- Added to slides {list}
 
 ## Issues Detected
-- (none)
+- {any issues or "(none)"}
 ```
 
 ## Output Format
@@ -217,3 +210,12 @@ Save alongside the output:
 - **Handle duplicates gracefully.** If two Slide Builder Agents accidentally produced overlapping slides, keep the one that matches the task_plan.md assignment and flag the duplicate in the report.
 - **Report missing pieces.** If a planned slide is missing from the builder outputs, document it clearly rather than silently skipping it. The orchestrator needs to know.
 - **Speaker notes matter.** Don't skip the notes merge — they're part of the deliverable.
+
+## ⛔ Rule 3 Compliance: Update task_plan.md
+
+**After completing assembly, you MUST update the workspace files:**
+
+1. **Edit `outputs/{project}/task_plan.md`** — mark Phase 4 assembly tasks as `[x]`
+2. **Append to `outputs/{project}/progress.md`** — "Phase 4 complete. Final deck assembled: final-deck.{ext}."
+
+This enables session resume if interrupted. Do NOT skip this step.

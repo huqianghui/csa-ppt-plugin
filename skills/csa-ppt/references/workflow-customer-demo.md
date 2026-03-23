@@ -1,5 +1,9 @@
 # Customer Solution Demo Workflow
 
+> **Prerequisites**: Before starting, ensure the **Three Inviolable Rules** from SKILL.md are followed:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — create workspace `outputs/{project}/` first),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 A customer demo deck typically needs to be professional, visually polished, and tell a
 compelling story about how Azure solves the customer's specific problem.
 

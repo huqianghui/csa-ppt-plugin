@@ -21,7 +21,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: "SD=\"${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/planning-with-files}/scripts\"; powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$SD/check-complete.ps1\" 2>/dev/null || sh \"$SD/check-complete.sh\""
+          command: "SD=\"${CLAUDE_PLUGIN_ROOT}/scripts\"; powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$SD/check-complete.ps1\" 2>/dev/null || sh \"$SD/check-complete.sh\""
 metadata:
   version: "2.23.0"
 ---
@@ -44,7 +44,7 @@ $(command -v python3 || command -v python) ${CLAUDE_PLUGIN_ROOT}/scripts/session
 
 ```powershell
 # Windows PowerShell
-& (Get-Command python -ErrorAction SilentlyContinue).Source "$env:USERPROFILE\.claude\skills\planning-with-files\scripts\session-catchup.py" (Get-Location)
+& (Get-Command python -ErrorAction SilentlyContinue).Source "$env:CLAUDE_PLUGIN_ROOT\scripts\session-catchup.py" (Get-Location)
 ```
 
 If catchup report shows unsynced context:

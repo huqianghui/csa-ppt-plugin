@@ -479,6 +479,6 @@ Required dependencies (should already be installed):
 - **playwright**: `npm install -g playwright` (for HTML rendering in html2pptx)
 - **react-icons**: `npm install -g react-icons react react-dom` (for icons)
 - **sharp**: `npm install -g sharp` (for SVG rasterization and image processing)
-- **LibreOffice**: `sudo apt-get install libreoffice` (for PDF conversion)
-- **Poppler**: `sudo apt-get install poppler-utils` (for pdftoppm to convert PDF to images)
+- **LibreOffice**: `brew install --cask libreoffice` (macOS) / `sudo apt-get install libreoffice` (Ubuntu) — for PDF conversion
+- **Poppler**: `brew install poppler` (macOS) / `sudo apt-get install poppler-utils` (Ubuntu) — for pdftoppm to convert PDF to images
 - **defusedxml**: `pip install defusedxml` (for secure XML parsing)

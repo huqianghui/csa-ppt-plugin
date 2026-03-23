@@ -1,5 +1,9 @@
 # Internal Tech Sharing Workflow
 
+> **Prerequisites**: Before starting, ensure the **Three Inviolable Rules** from SKILL.md are followed:
+> Rule 1 (CLARIFY-BEFORE-PLAN), Rule 2 (FILE-FIRST — create workspace `outputs/{project}/` first),
+> Rule 3 (UPDATE-AFTER-EVERY-TASK — mark `[x]` in task_plan.md after each step).
+
 Internal tech talks, brown bags, and deep-dives are less formal but still need clear
 structure and good visuals. The audience is usually technical colleagues.
 
