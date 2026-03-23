@@ -18,7 +18,7 @@ You receive these parameters in your prompt:
   - Content outline (bullet points, key messages)
   - Layout type (title, content, two-column, diagram, code)
   - Diagram references (if any — paths to pre-generated images)
-- **output_format**: The tool chain to use (pptx-html2pptx / pptx-ooxml / frontend-slides / skywork-ppt)
+- **final_format**: The final deck output format (pptx / html) — informs the default, but does NOT force intermediate format
 - **sub_skill_path**: Path to the relevant sub-skill SKILL.md
 - **output_dir**: Where to save the generated slide files
 - **reference_slides**: (optional) Paths to already-completed slides for visual consistency
@@ -27,8 +27,8 @@ You receive these parameters in your prompt:
 ## Tools
 
 - **Read**: Read sub-skill SKILL.md, findings.md, reference slides, diagram files
-- **Write**: Write HTML/CSS/XML slide files
-- **Bash**: Run scripts (html2pptx.js, python-pptx, etc.)
+- **Write**: Write slide files (.pptx via python-pptx scripts, or .html/.css)
+- **Bash**: Run scripts (python-pptx for .pptx slides, html generation, etc.)
 - **Glob**: Find diagram images and reference files
 
 ## Process
@@ -43,15 +43,28 @@ Before creating any slide, memorize these rules:
 4. **Language**: Primary language, which terms stay in English
 5. **Layout**: Margins, padding, alignment conventions
 
-### Step 2: Read the Sub-Skill Instructions
+### Step 2: Choose Intermediate Format Per Slide
 
-1. Read the sub-skill SKILL.md for the target output format
-2. Understand the file structure and creation workflow:
-   - **pptx (html2pptx)**: Write HTML slides → convert with html2pptx.js
-   - **pptx (OOXML)**: Write slide XML directly
-   - **frontend-slides**: Write HTML + CSS + JS
-   - **skywork-ppt**: Use python-pptx via scripts
-3. Note any format-specific constraints or templates
+For each slide, decide the intermediate format based on content characteristics:
+
+| Content Characteristic | Use .pptx (python-pptx) | Use .html |
+|----------------------|------------------------|-----------|
+| Simple bullet layout | ✅ | |
+| English-only content | ✅ | |
+| Standard title + body | ✅ | |
+| Chinese-heavy (中文为主) | | ✅ (better CJK font rendering) |
+| Code blocks with syntax highlighting | | ✅ (native code rendering) |
+| Complex multi-column layouts | | ✅ (CSS flexbox/grid) |
+| Rich formatting (gradients, animations) | | ✅ |
+| Diagram-only slide (embed image) | ✅ | |
+
+**Decision rule**: Default to .pptx for simplicity. Use .html only when .pptx would produce inferior results for that specific slide's content.
+
+Then read the relevant sub-skill SKILL.md:
+- **For .pptx slides**: Read `skywork-ppt/SKILL.md` or `pptx/SKILL.md` (python-pptx workflow)
+- **For .html slides**: Read `frontend-slides/SKILL.md` or `pptx/SKILL.md` (html2pptx workflow)
+
+Note any format-specific constraints or templates.
 
 ### Step 3: Review Reference Slides (if provided)
 
@@ -106,32 +119,50 @@ For each slide, self-check:
 
 ### Step 6: Save Slides
 
-1. Save each slide to `{output_dir}/slide-{N}.{ext}` (numbered by slide position)
+1. Save each slide to `{output_dir}/slide-{N}.{pptx|html}` (format chosen per Step 2)
 2. Save speaker notes alongside: `{output_dir}/slide-{N}-notes.md`
-3. Write a manifest listing what was produced:
+3. Write a manifest listing what was produced — **must record the format per slide**:
 
 ```markdown
 # Slide Builder Output
 
 ## Slides Produced
-- slide-3.html — "客户痛点" (Customer Challenges)
-- slide-4.html — "方案概览" (Solution Overview)
-- slide-5.html — "架构详解" (Architecture Deep-Dive)
+| Slide | Format | Title | Why This Format |
+|-------|--------|-------|-----------------|
+| slide-3.pptx | pptx | "客户痛点" (Customer Challenges) | Simple bullets, mostly English terms |
+| slide-4.pptx | pptx | "方案概览" (Solution Overview) | Standard layout with diagram |
+| slide-5.html | html | "架构详解" (Architecture Deep-Dive) | Complex layout with annotations |
 
 ## Diagrams Embedded
-- slide-5.html references: diagrams/rag-architecture.png
+- slide-4.pptx references: diagrams/rag-architecture.png
 
 ## Notes
 - Slide 4 had 8 bullets in the spec, consolidated to 6 per density rules
 - Moved 2 items to speaker notes for slide 4
 ```
 
+The Assembly Agent reads this manifest to know how to process each slide file.
+
 ## Output Format
 
 For each slide:
-1. **Slide file**: `slide-{N}.{ext}` in the specified output format
+1. **Slide file**: `slide-{N}.pptx` or `slide-{N}.html` — format chosen per-slide based on content
 2. **Speaker notes**: `slide-{N}-notes.md` (markdown)
-3. **Manifest**: `manifest.md` summarizing what was produced
+3. **Manifest**: `manifest.md` — must include format column so the Assembly Agent knows how to handle each slide
+
+**For .pptx intermediate slides** (via python-pptx):
+```python
+from pptx import Presentation
+from pptx.util import Inches, Pt
+prs = Presentation()
+slide_layout = prs.slide_layouts[1]  # Title + Content
+slide = prs.slides.add_slide(slide_layout)
+# ... add content, apply Style Contract colors/fonts ...
+prs.save(f'{output_dir}/slide-{N}.pptx')
+```
+
+**For .html intermediate slides**:
+Follow the sub-skill's HTML generation workflow (frontend-slides or html2pptx).
 
 ## Guidelines
 

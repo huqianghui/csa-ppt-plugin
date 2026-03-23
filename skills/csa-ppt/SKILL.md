@@ -65,7 +65,7 @@ Then immediately write these 3 files using the Write tool:
 | Phase 0: Init | `task_plan.md`, `progress.md`, `style_contract.md` | — |
 | Phase 1: Research | `findings.md` | `task_plan.md` |
 | Phase 2: Diagrams | `diagrams/*.png`, `diagrams/manifest.md` | `task_plan.md`, `style_contract.md` |
-| Phase 3: Slides | `slides/slide-{N}.html`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md`, `diagrams/` |
+| Phase 3: Slides | `slides/slide-{N}.{pptx\|html}`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md`, `diagrams/` |
 | Phase 4: Assembly | `final/final-deck.{pptx\|html}`, `final/assembly-report.md` | `slides/`, `diagrams/`, `task_plan.md` |
 | Phase 5: Review | `final/review_report.md`, `final/fix_summary.md` | `final/final-deck.*`, `style_contract.md` |
 
@@ -86,10 +86,10 @@ outputs/{project-name}/
 │   ├── rag-architecture.png  ← Diagram images
 │   └── data-pipeline.png
 ├── slides/
-│   ├── manifest.md           ← List of slides built
-│   ├── slide-1.html          ← Individual slide files
+│   ├── manifest.md           ← List of slides built (includes format per slide)
+│   ├── slide-1.pptx          ← Individual slide files (.pptx or .html per slide)
 │   ├── slide-1-notes.md      ← Speaker notes per slide
-│   ├── slide-2.html
+│   ├── slide-2.html          ← Format chosen per-slide by content complexity
 │   └── ...
 └── final/
     ├── final-deck.pptx       ← Assembled deck (or .html)
@@ -228,13 +228,20 @@ Append to progress.md → "Phase 2 complete. N diagrams saved to diagrams/."
 ```
 
 **Phase 3 — Slides:**
+
+Each sub-agent **chooses the intermediate format per-slide** based on content:
+- **Use .pptx** (via python-pptx) for: simple layouts, English-only content, standard bullet slides
+- **Use .html** for: complex layouts, Chinese-heavy content, code blocks, rich formatting
+
+The Assembly Agent handles mixed formats during merge.
+
 ```
 # After each slide is built, WRITE to disk:
-Save slide → outputs/{project-name}/slides/slide-{N}.html
+Save slide → outputs/{project-name}/slides/slide-{N}.{pptx|html}  (format chosen by content)
 Save notes → outputs/{project-name}/slides/slide-{N}-notes.md
-Write manifest → outputs/{project-name}/slides/manifest.md
+Write manifest → outputs/{project-name}/slides/manifest.md  (must record format per slide)
 Edit task_plan.md → mark slide task [x]
-Append to progress.md → "Slide N complete."
+Append to progress.md → "Slide N complete. Format: {pptx|html}."
 ```
 
 ### Step 4: Parallel Execution (Optional)
@@ -267,17 +274,19 @@ Slide Builder A: "Build slides 3-5 (customer challenges + solution overview + ar
   READ style_contract.md from: outputs/rag-demo/style_contract.md
   READ findings from: outputs/rag-demo/findings.md
   READ diagrams from: outputs/rag-demo/diagrams/
-  WRITE slides to: outputs/rag-demo/slides/slide-3.html, slide-4.html, slide-5.html
-  WRITE notes to: outputs/rag-demo/slides/slide-3-notes.md, etc.
-  Sub-skill: pptx/SKILL.md
+  WRITE slides to: outputs/rag-demo/slides/slide-{N}.{pptx|html}
+    → Choose format per-slide: .pptx for simple layouts, .html for complex/Chinese content
+  WRITE notes to: outputs/rag-demo/slides/slide-{N}-notes.md
+  Sub-skill: pptx/SKILL.md (for .pptx slides) or frontend-slides/SKILL.md (for .html slides)
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
 Slide Builder B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
   Workspace: outputs/rag-demo/
   READ style_contract.md from: outputs/rag-demo/style_contract.md
   READ findings from: outputs/rag-demo/findings.md
-  WRITE slides to: outputs/rag-demo/slides/slide-6.html, slide-7.html, slide-8.html
-  Sub-skill: pptx/SKILL.md
+  WRITE slides to: outputs/rag-demo/slides/slide-{N}.{pptx|html}
+    → Slides 7 (中文文档优化) likely .html for better CJK handling
+  Sub-skill: pptx/SKILL.md or frontend-slides/SKILL.md
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
 Diagram Agent: "Generate architecture diagrams.
@@ -448,7 +457,8 @@ Phase 2: Diagram Agent
 
 Phase 3: Slide Builder Agent(s)  [parallelizable]
   READS  ← style_contract.md, findings.md, diagrams/
-  WRITES → slides/slide-{N}.html, slides/slide-{N}-notes.md, slides/manifest.md
+  WRITES → slides/slide-{N}.{pptx|html}, slides/slide-{N}-notes.md, slides/manifest.md
+  FORMAT CHOICE: .pptx (simple/English) or .html (complex/Chinese/code) per slide
 
 Phase 4: Assembly Agent
   READS  ← task_plan.md, slides/, diagrams/
