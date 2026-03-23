@@ -109,6 +109,47 @@ The **csa-ppt** skill will automatically:
 5. Assemble, normalizing any mixed intermediate formats
 6. Review the assembled deck for quality and apply fixes
 
+### Workspace — Intermediate Outputs You Can Inspect
+
+Every presentation creates a workspace folder under `outputs/`. All intermediate files are
+written to disk so you can **review, edit, or adjust** them at any point before the final
+deck is assembled.
+
+```
+outputs/{project-name}/
+├── task_plan.md              ← Slide plan with checkboxes — edit to reorder/add/remove slides
+├── progress.md               ← Session log — see what's been done and what's next
+├── style_contract.md         ← Colors, fonts, layout rules — edit to change the look
+├── findings.md               ← Research results — review before slides are built
+├── diagrams/
+│   ├── manifest.md           ← List of generated diagrams
+│   ├── rag-architecture.png  ← Architecture diagram — open to preview
+│   └── data-pipeline.png     ← Flow diagram — replace with your own if needed
+├── slides/
+│   ├── manifest.md           ← Per-slide format (pptx/html) and status
+│   ├── slide-1.pptx          ← Individual slide — open in PowerPoint to check
+│   ├── slide-1-notes.md      ← Speaker notes — edit to refine talking points
+│   ├── slide-2.html          ← HTML slide — open in browser to preview
+│   └── ...
+└── final/
+    ├── final-deck.pptx       ← Assembled deck — the deliverable
+    ├── assembly-report.md    ← What was merged, format conversions applied
+    ├── review_report.md      ← Quality review results (per-slide PASS/FIX)
+    └── fix_summary.md        ← What was fixed after review
+```
+
+**How to use this during creation:**
+
+- **Adjust the plan** — Edit `task_plan.md` to add/remove/reorder slides before Phase 3
+- **Change the style** — Edit `style_contract.md` to change colors or fonts before slides are built
+- **Review research** — Read `findings.md` to verify the content before it goes into slides
+- **Preview individual slides** — Open `.pptx` files in PowerPoint or `.html` files in a browser
+- **Replace diagrams** — Drop your own `.png` files into `diagrams/` and update `manifest.md`
+- **Edit speaker notes** — Modify any `slide-{N}-notes.md` before assembly
+- **Check review results** — Read `review_report.md` to see what the Review Agent flagged
+
+All changes you make to intermediate files will be picked up by the next phase.
+
 ## Project Structure
 
 ```
