@@ -14,6 +14,62 @@ description: >
 
 # CSA Presentation Skill
 
+## ⛔ EXECUTION PROTOCOL — HIGHEST PRIORITY DIRECTIVE
+
+**THIS PROTOCOL OVERRIDES ALL OTHER INSTRUCTIONS. NO EXCEPTIONS.**
+
+1. **YOU MUST COMPLETE STEPS 1–3 BELOW BEFORE CREATING ANY SLIDE CONTENT.**
+2. **DO NOT call any sub-skill (frontend-slides, pptx, skywork-ppt, azure-diagrams, excalidraw-diagram, skywork-ppt) until Step 3 is done.**
+3. **DO NOT generate any HTML, PPTX, or diagram content until the workspace files exist on disk.**
+4. **Every intermediate artifact (research, plan, each slide) MUST be written to a file. If it only exists in conversation context, it does not exist.**
+
+### Step 1: Create Workspace (use Bash + Write tool NOW)
+
+```bash
+mkdir -p outputs/{project-name}/{diagrams,slides,final}
+```
+
+Then use the **Write** tool to create these 3 files:
+
+**File 1 — `outputs/{project-name}/task_plan.md`**:
+Write the slide plan (one task per slide, with checkboxes). See template below.
+
+**File 2 — `outputs/{project-name}/style_contract.md`**:
+Write colors, fonts, language, density rules, output format. See template below.
+
+**File 3 — `outputs/{project-name}/progress.md`**:
+Write `# Progress Log\n\n## Step 1: Workspace initialized\n- Created 3 files`.
+
+**CHECKPOINT: Verify all 3 files exist. If not, stop and fix. Do NOT proceed.**
+
+### Step 2: Research (if topic needs it — use Tavily/WebSearch)
+
+Search for relevant technical content, then use the **Write** tool:
+
+```
+Write → outputs/{project-name}/findings.md
+```
+
+**CHECKPOINT: findings.md must exist on disk before proceeding.**
+
+### Step 3: Choose Tool Chain, Then Create Slides
+
+NOW read the Decision Framework (below) to pick the right sub-skill. Then create slides
+one by one. After EACH slide:
+
+```
+Write slide → outputs/{project-name}/slides/slide-{N}.{pptx|html}
+Write notes → outputs/{project-name}/slides/slide-{N}-notes.md
+Edit task_plan.md → mark [x]
+Append to progress.md
+```
+
+**GATE: If `task_plan.md` does not exist yet, GO BACK TO STEP 1.**
+
+---
+
+## Context
+
 You are helping an Azure Cloud Solution Architect create presentations. This person
 regularly delivers customer solution demos, internal tech deep-dives, workshop materials,
 and architecture reviews. They work across Chinese and English content and often receive
@@ -36,27 +92,10 @@ For simple requests (< 5 slides), the planning can be lightweight and the review
 can be a quick self-check. For anything larger, use the full planning-with-files workflow
 and the formal review agent.
 
-## CRITICAL: File-Based Workflow
+## File-Based Workflow (enforced by Execution Protocol above)
 
 **All work MUST be persisted to files.** Agents communicate through files, not through
 conversation context. If it's not written to a file, it doesn't exist for the next phase.
-
-### Step 0: Initialize Workspace (MANDATORY)
-
-Before doing ANYTHING else, create the workspace directory structure. Use the project
-name derived from the user's request (e.g., "rag-demo", "aca-migration"):
-
-```bash
-mkdir -p outputs/{project-name}/{diagrams,slides,final}
-```
-
-Then immediately write these 3 files using the Write tool:
-
-**File 1: `outputs/{project-name}/task_plan.md`** — The master plan (see template below)
-**File 2: `outputs/{project-name}/progress.md`** — Session log, updated after each step
-**File 3: `outputs/{project-name}/style_contract.md`** — Extracted from task_plan for easy reference
-
-**DO NOT proceed to any other step until these 3 files exist on disk.**
 
 ### File Contract: What Each Phase MUST Write
 
@@ -98,15 +137,13 @@ outputs/{project-name}/
     └── fix_summary.md        ← Fix agent output
 ```
 
-## Planning Workflow (Plan First, Then Build)
+## Templates (referenced by Execution Protocol above)
 
-Before creating any presentation, initialize the workspace (Step 0 above), then create
-the plan. For 5+ slides, also read `planning-with-files/SKILL.md` for the full system.
+For 5+ slides, also read `planning-with-files/SKILL.md` for the full system.
 
-### Step 1: Create the Slide Plan
+### task_plan.md Template
 
-After understanding the user's request, **write** `task_plan.md` to disk with one task
-per slide or logical chapter. Example:
+Write this to `outputs/{project-name}/task_plan.md` in Step 1 of the Execution Protocol:
 
 ```markdown
 ## Goal
@@ -160,10 +197,10 @@ Create a 10-slide customer demo about Azure RAG solution for a finance company.
 - [ ] Deliver with any KNOWN_ISSUES documented
 ```
 
-### Step 2: Lock the Style Contract (WRITE TO FILE)
+### style_contract.md Template
 
-The **Style Contract** is critical. **Write it to `style_contract.md`** as a standalone
-file so every sub-agent can read it directly without parsing task_plan.md.
+Write this to `outputs/{project-name}/style_contract.md` in Step 1 of the Execution Protocol.
+Every sub-agent reads this file directly.
 
 ```markdown
 # Style Contract
@@ -202,13 +239,9 @@ file so every sub-agent can read it directly without parsing task_plan.md.
 **Every sub-agent prompt must include**: "Read `style_contract.md` at
 `outputs/{project-name}/style_contract.md` for all styling rules."
 
-### Step 3: Execute Phase by Phase (WRITE FILES AT EACH STEP)
+### Per-Phase File Write Commands
 
-Work through each phase. **After completing each task:**
-
-1. Write the output files to the workspace directory
-2. Mark it `[x]` in `task_plan.md` (use Edit tool)
-3. Append to `progress.md` what was created and where
+After completing each task, use these exact commands:
 
 **Phase 1 — Research:**
 ```
