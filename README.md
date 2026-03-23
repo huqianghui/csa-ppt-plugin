@@ -4,6 +4,8 @@ All-in-one presentation toolkit for **Azure Cloud Solution Architects**, built f
 
 ## What's Inside
 
+### Skills
+
 | Skill | Description |
 |-------|-------------|
 | **csa-ppt** | Smart orchestrator — analyzes your request and routes to the best tool chain |
@@ -12,6 +14,32 @@ All-in-one presentation toolkit for **Azure Cloud Solution Architects**, built f
 | **frontend-slides** | Zero-dependency HTML presentations, great for Chinese content and code |
 | **pptx** | Full OOXML-level PowerPoint creation and editing |
 | **skywork-ppt** | Quick PowerPoint generation, template-based creation, and slide operations |
+| **planning-with-files** | Task planning with file-based progress tracking for multi-slide decks |
+
+### Sub-Agents
+
+The orchestrator dispatches specialized sub-agents for each phase of the workflow:
+
+| Agent | Phase | Role |
+|-------|-------|------|
+| **Research Agent** | Phase 1 | Gathers Azure docs, features, case studies, and industry context |
+| **Slide Builder Agent** | Phase 3 | Builds individual slides per the Style Contract (parallelizable) |
+| **Review Agent** | Phase 5 | Quality review across 7 dimensions, max 2 rounds |
+| **Fix Agent** | Phase 5 | Applies targeted fixes from the review report |
+
+### Workflow
+
+```
+Plan → Style Contract → Research → Diagrams → Slides → Assembly → Review → Fix → Deliver
+```
+
+Each presentation follows a **5-phase workflow**:
+
+1. **Plan** — Break the deck into tasks (one per slide/chapter)
+2. **Define Style** — Lock colors, fonts, layout rules into a Style Contract
+3. **Execute** — Build slides (parallel sub-agents for large decks)
+4. **Assemble** — Combine into final .pptx or HTML
+5. **Review & Fix** — Quality check + fix loop (max 2 rounds)
 
 ## Supported Scenarios
 
@@ -48,7 +76,9 @@ Just describe what you need in natural language:
 The **csa-ppt** skill will automatically:
 1. Analyze your request (content type, language, format)
 2. Choose the best tool chain
-3. Generate diagrams, slides, and presentations
+3. Dispatch research, diagram, and slide-builder agents
+4. Review the assembled deck for quality
+5. Apply fixes and deliver
 
 ## Prerequisites
 

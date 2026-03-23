@@ -28,10 +28,13 @@ Every presentation follows a **Plan-first, slide-by-slide execution** workflow:
 2. **Define Style** — Lock down colors, fonts, layout rules BEFORE any slide is created
 3. **Execute** — Complete slides one by one (or in parallel via sub-agents), checking off
    each task as it's done
-4. **Verify** — Review the assembled result for consistency
+4. **Assemble** — Combine all slides into the final deck
+5. **Review** — Spawn the review sub-agent to check quality and style consistency (max 2
+   rounds). Read `agents/review-agent.md` for the full review protocol.
 
-For simple requests (< 5 slides), the planning can be lightweight. For anything larger,
-use the full planning-with-files workflow to track progress.
+For simple requests (< 5 slides), the planning can be lightweight and the review step
+can be a quick self-check. For anything larger, use the full planning-with-files workflow
+and the formal review agent.
 
 ## Planning Workflow (Plan First, Then Build)
 
@@ -81,12 +84,18 @@ Create a 10-slide customer demo about Azure RAG solution for a finance company.
 - [ ] Slide 9: Implementation roadmap / 实施路径
 - [ ] Slide 10: Next steps / 下一步
 
-### Phase 4: Assembly & Verification
+### Phase 4: Assembly
 **Status:** pending
 - [ ] Assemble all slides into final .pptx
-- [ ] Verify visual consistency across all slides
-- [ ] Check Chinese text rendering
 - [ ] Add speaker notes
+- [ ] Verify file opens correctly
+
+### Phase 5: Review & Fix (max 2 rounds)
+**Status:** pending
+- [ ] Round 1: Spawn review agent → review_report.md
+- [ ] Apply Round 1 fixes (if any)
+- [ ] Round 2: Verify fixes → final review_report.md
+- [ ] Deliver with any KNOWN_ISSUES documented
 ```
 
 ### Step 2: Lock the Style Contract
@@ -134,22 +143,74 @@ Each sub-agent MUST receive:
 3. A reference to any already-completed slides for visual consistency
 4. The same sub-skill SKILL.md instructions
 
-Example parallel dispatch:
+Example parallel dispatch using Slide Builder Agents:
 ```
-Sub-agent A: "Build slides 3-5 (customer challenges + solution overview + architecture).
-  Style Contract: [paste from plan]. Use pptx html2pptx workflow.
-  Save to: outputs/slides-3-5/"
+Slide Builder A: "Build slides 3-5 (customer challenges + solution overview + architecture).
+  Style Contract: [paste from plan].
+  Output format: pptx html2pptx.
+  Sub-skill: pptx/SKILL.md
+  Output dir: outputs/slides-3-5/
+  Findings: outputs/findings.md
+  Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
-Sub-agent B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
-  Style Contract: [paste from plan]. Use pptx html2pptx workflow.
-  Save to: outputs/slides-6-8/"
+Slide Builder B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
+  Style Contract: [paste from plan].
+  Output format: pptx html2pptx.
+  Sub-skill: pptx/SKILL.md
+  Output dir: outputs/slides-6-8/
+  Findings: outputs/findings.md
+  Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
-Sub-agent C: "Generate architecture diagrams using azure-diagrams.
+Diagram Agent: "Generate architecture diagrams using azure-diagrams.
   Color scheme: Azure Blue + Green + Orange.
+  Instructions: Read azure-diagrams/SKILL.md.
   Save to: outputs/diagrams/"
 ```
 
 After all sub-agents complete, assemble into the final deck in Phase 4.
+
+### Step 5: Review Loop (Phase 5)
+
+After assembly, spawn the **review agent** as a sub-agent to check the complete deck.
+Read `agents/review-agent.md` for the full review protocol.
+
+**Round 1 — Full Review:**
+```
+Review Agent: "Review the assembled presentation for quality and consistency.
+
+  Style Contract:
+    [paste the full Style Contract from task_plan.md]
+
+  Output files: outputs/final-deck.pptx
+  Review round: 1
+  Previous review: none
+
+  Instructions: Read agents/review-agent.md for the full review protocol."
+```
+
+The review agent produces `review_report.md` with per-slide PASS/FIX verdicts.
+
+**Apply Fixes:**
+If the overall verdict is NEEDS_FIX, read the review report and apply the fixes.
+The fixes are applied by the orchestrator or by dispatching sub-agents to the
+relevant slides/tools.
+
+**Round 2 — Verify Fixes:**
+```
+Review Agent: "Verify that Round 1 fixes were applied correctly.
+
+  Style Contract: [same as Round 1]
+  Output files: outputs/final-deck.pptx
+  Review round: 2
+  Previous review: outputs/review_report.md
+
+  Instructions: Read agents/review-agent.md for the Round 2 protocol."
+```
+
+**After Round 2:**
+- If PASS → deliver the deck
+- If NEEDS_FIX → mark remaining issues as KNOWN_ISSUES, deliver with the report
+- Do NOT loop a third time — the user decides what to fix manually
 
 ## Decision Framework
 
@@ -294,6 +355,32 @@ These paths are relative to the skill directory:
 
 **Read the relevant sub-skill's SKILL.md before using it.** Each has specific patterns,
 scripts, and constraints that matter for quality output.
+
+## Sub-Agents
+
+The `agents/` directory contains instructions for specialized sub-agents. Read the
+relevant agent file before spawning it.
+
+| Agent | File | When to Spawn |
+|-------|------|--------------|
+| **Research Agent** | `agents/research-agent.md` | Phase 1 — gather Azure docs, features, case studies |
+| **Slide Builder Agent** | `agents/slide-builder-agent.md` | Phase 3 — build individual slides (parallelizable) |
+| **Review Agent** | `agents/review-agent.md` | Phase 5 — quality review (7 dimensions, max 2 rounds) |
+| **Fix Agent** | `agents/fix-agent.md` | Phase 5 — apply fixes from review report |
+
+**Agent interaction flow:**
+```
+Phase 1: Research Agent → findings.md
+Phase 2: Diagram generation (azure-diagrams / excalidraw)
+Phase 3: Slide Builder Agent(s) → slide files (can run in parallel)
+Phase 4: Assembly → final deck
+Phase 5: Review Agent (Round 1) → review_report.md
+         Fix Agent → apply fixes → fix_summary.md
+         Review Agent (Round 2) → final verdict
+```
+
+Each sub-agent receives the **Style Contract** and **sub-skill SKILL.md** as part of
+its prompt. This ensures consistent behavior even when agents run in parallel.
 
 ## Quality Checklist
 
