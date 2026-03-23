@@ -14,57 +14,59 @@ description: >
 
 # CSA Presentation Skill
 
-## ⛔ EXECUTION PROTOCOL — HIGHEST PRIORITY DIRECTIVE
+## ⛔ MANDATORY EXECUTION SEQUENCE
 
-**THIS PROTOCOL OVERRIDES ALL OTHER INSTRUCTIONS. NO EXCEPTIONS.**
+**STOP. Before doing ANYTHING else, execute these tool calls in EXACT ORDER.**
+**Do NOT skip any step. Do NOT generate diagrams, HTML, PPTX, or any content until Step 4.**
+**Do NOT run python3, node, or any content-generation script until Step 4.**
 
-1. **YOU MUST COMPLETE STEPS 1–3 BELOW BEFORE CREATING ANY SLIDE CONTENT.**
-2. **DO NOT call any sub-skill (frontend-slides, pptx, skywork-ppt, azure-diagrams, excalidraw-diagram, skywork-ppt) until Step 3 is done.**
-3. **DO NOT generate any HTML, PPTX, or diagram content until the workspace files exist on disk.**
-4. **Every intermediate artifact (research, plan, each slide) MUST be written to a file. If it only exists in conversation context, it does not exist.**
+### Step 1 → Bash tool: Create directories
 
-### Step 1: Create Workspace (use Bash + Write tool NOW)
-
+Call the Bash tool with this exact command (replace `{project}` with a short name from the user's request):
 ```bash
-mkdir -p outputs/{project-name}/{diagrams,slides,final}
+mkdir -p outputs/{project}/{diagrams,slides,final}
 ```
 
-Then use the **Write** tool to create these 3 files:
+### Step 2 → Write tool: Create 3 mandatory files
 
-**File 1 — `outputs/{project-name}/task_plan.md`**:
-Write the slide plan (one task per slide, with checkboxes). See template below.
+Call the Write tool 3 times in sequence. These files MUST exist before ANY other work.
 
-**File 2 — `outputs/{project-name}/style_contract.md`**:
-Write colors, fonts, language, density rules, output format. See template below.
+**Call Write tool** → file_path: `outputs/{project}/task_plan.md`
+Content: The slide plan with checkboxes. Use the task_plan.md template below.
 
-**File 3 — `outputs/{project-name}/progress.md`**:
-Write `# Progress Log\n\n## Step 1: Workspace initialized\n- Created 3 files`.
+**Call Write tool** → file_path: `outputs/{project}/style_contract.md`
+Content: Colors, fonts, language, density rules. Use the style_contract.md template below.
 
-**CHECKPOINT: Verify all 3 files exist. If not, stop and fix. Do NOT proceed.**
+**Call Write tool** → file_path: `outputs/{project}/progress.md`
+Content: `# Progress Log\n\n## Workspace initialized\n- task_plan.md created\n- style_contract.md created`
 
-### Step 2: Research (if topic needs it — use Tavily/WebSearch)
+### Step 3 → CHECKPOINT: Verify files exist
 
-Search for relevant technical content, then use the **Write** tool:
-
+Call the Bash tool:
+```bash
+ls -la outputs/{project}/task_plan.md outputs/{project}/style_contract.md outputs/{project}/progress.md
 ```
-Write → outputs/{project-name}/findings.md
-```
+If ANY file is missing, go back to Step 2. **Do NOT proceed until all 3 files are confirmed.**
 
-**CHECKPOINT: findings.md must exist on disk before proceeding.**
+### Step 4 → Research (if needed) → Write findings to file
 
-### Step 3: Choose Tool Chain, Then Create Slides
+If the topic needs research (web search, Azure docs), do the research, then:
 
-NOW read the Decision Framework (below) to pick the right sub-skill. Then create slides
-one by one. After EACH slide:
+**Call Write tool** → file_path: `outputs/{project}/findings.md`
+Content: Structured research findings (topics, key points, terminology).
 
-```
-Write slide → outputs/{project-name}/slides/slide-{N}.{pptx|html}
-Write notes → outputs/{project-name}/slides/slide-{N}-notes.md
-Edit task_plan.md → mark [x]
-Append to progress.md
-```
+### Step 5 → NOW create diagrams and slides
 
-**GATE: If `task_plan.md` does not exist yet, GO BACK TO STEP 1.**
+Only NOW may you call sub-skills (azure-diagrams, frontend-slides, pptx, etc.).
+After creating EACH artifact, immediately write it to the workspace:
+
+- Each diagram → `outputs/{project}/diagrams/{name}.png`
+- Each slide → `outputs/{project}/slides/slide-{N}.{pptx|html}`
+- Each speaker note → `outputs/{project}/slides/slide-{N}-notes.md`
+- After each slide → Edit `task_plan.md` to mark `[x]`
+- After each slide → Append to `progress.md`
+
+**RULE: If you are about to run a python3/node script but `task_plan.md` does not exist yet, STOP and go back to Step 1.**
 
 ---
 
