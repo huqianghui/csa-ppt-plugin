@@ -36,15 +36,77 @@ For simple requests (< 5 slides), the planning can be lightweight and the review
 can be a quick self-check. For anything larger, use the full planning-with-files workflow
 and the formal review agent.
 
+## CRITICAL: File-Based Workflow
+
+**All work MUST be persisted to files.** Agents communicate through files, not through
+conversation context. If it's not written to a file, it doesn't exist for the next phase.
+
+### Step 0: Initialize Workspace (MANDATORY)
+
+Before doing ANYTHING else, create the workspace directory structure. Use the project
+name derived from the user's request (e.g., "rag-demo", "aca-migration"):
+
+```bash
+mkdir -p outputs/{project-name}/{diagrams,slides,final}
+```
+
+Then immediately write these 3 files using the Write tool:
+
+**File 1: `outputs/{project-name}/task_plan.md`** — The master plan (see template below)
+**File 2: `outputs/{project-name}/progress.md`** — Session log, updated after each step
+**File 3: `outputs/{project-name}/style_contract.md`** — Extracted from task_plan for easy reference
+
+**DO NOT proceed to any other step until these 3 files exist on disk.**
+
+### File Contract: What Each Phase MUST Write
+
+| Phase | MUST Write (output files) | MUST Read (input files) |
+|-------|--------------------------|------------------------|
+| Phase 0: Init | `task_plan.md`, `progress.md`, `style_contract.md` | — |
+| Phase 1: Research | `findings.md` | `task_plan.md` |
+| Phase 2: Diagrams | `diagrams/*.png`, `diagrams/manifest.md` | `task_plan.md`, `style_contract.md` |
+| Phase 3: Slides | `slides/slide-{N}.html`, `slides/manifest.md` | `task_plan.md`, `style_contract.md`, `findings.md`, `diagrams/` |
+| Phase 4: Assembly | `final/final-deck.{pptx\|html}`, `final/assembly-report.md` | `slides/`, `diagrams/`, `task_plan.md` |
+| Phase 5: Review | `final/review_report.md`, `final/fix_summary.md` | `final/final-deck.*`, `style_contract.md` |
+
+**After completing EACH phase:**
+1. Update `task_plan.md` — mark completed items `[x]`, update phase status
+2. Append to `progress.md` — what was done, files created, any issues
+
+### Workspace Directory Structure
+
+```
+outputs/{project-name}/
+├── task_plan.md              ← Master plan with checkboxes (WRITE FIRST)
+├── progress.md               ← Session log (UPDATE AFTER EVERY STEP)
+├── style_contract.md         ← Colors, fonts, layout rules (WRITE FIRST)
+├── findings.md               ← Research results (Phase 1 output)
+├── diagrams/
+│   ├── manifest.md           ← List of diagrams generated
+│   ├── rag-architecture.png  ← Diagram images
+│   └── data-pipeline.png
+├── slides/
+│   ├── manifest.md           ← List of slides built
+│   ├── slide-1.html          ← Individual slide files
+│   ├── slide-1-notes.md      ← Speaker notes per slide
+│   ├── slide-2.html
+│   └── ...
+└── final/
+    ├── final-deck.pptx       ← Assembled deck (or .html)
+    ├── assembly-report.md    ← What was assembled
+    ├── review_report.md      ← Review agent output
+    └── fix_summary.md        ← Fix agent output
+```
+
 ## Planning Workflow (Plan First, Then Build)
 
-Before creating any presentation with 5+ slides, initialize a plan using the
-**planning-with-files** skill. Read `planning-with-files/SKILL.md` for the full system.
+Before creating any presentation, initialize the workspace (Step 0 above), then create
+the plan. For 5+ slides, also read `planning-with-files/SKILL.md` for the full system.
 
 ### Step 1: Create the Slide Plan
 
-After understanding the user's request, create a `task_plan.md` with one task per
-slide or logical chapter. Example:
+After understanding the user's request, **write** `task_plan.md` to disk with one task
+per slide or logical chapter. Example:
 
 ```markdown
 ## Goal
@@ -98,29 +160,82 @@ Create a 10-slide customer demo about Azure RAG solution for a finance company.
 - [ ] Deliver with any KNOWN_ISSUES documented
 ```
 
-### Step 2: Lock the Style Contract
+### Step 2: Lock the Style Contract (WRITE TO FILE)
 
-The **Style Contract** in the plan is critical — it ensures consistency whether you build
-slides sequentially or in parallel. Before creating any slide, the style contract must
-define:
+The **Style Contract** is critical. **Write it to `style_contract.md`** as a standalone
+file so every sub-agent can read it directly without parsing task_plan.md.
 
-- Color palette (primary, secondary, accent, background)
-- Font family for headings, body text, and code
-- Language and text direction
-- Content density rules (max bullets, max words per bullet)
-- Diagram color coding conventions
-- Output format and tool chain
+```markdown
+# Style Contract
 
-Every slide must reference this contract. When using sub-agents, pass the Style Contract
-to each one explicitly.
+## Colors
+- Primary: #0078D4 (Azure Blue)
+- Background: #1B1B1B (Dark)
+- Surface: #F5F5F5 (Light Gray)
+- Accent: #50E6FF (Cyan)
+- Text: #FFFFFF on dark, #1B1B1B on light
 
-### Step 3: Execute Slide by Slide
+## Fonts
+- Headings: Arial, 28pt
+- Body: Segoe UI, 16pt
+- Code: Consolas, 14pt
 
-Work through Phase 3 one task at a time. After completing each slide:
+## Language
+- Primary: Chinese (中文)
+- Technical terms in English: Azure OpenAI, RAG, API
 
-1. Mark it `[x]` in `task_plan.md`
-2. Update `progress.md` with what was created
-3. Move to the next slide
+## Content Density
+- Max 6 lines per slide
+- Max 8 words per bullet (Chinese: 15 characters)
+- Overflow → speaker notes
+
+## Diagram Colors
+- Azure services: #0078D4
+- Data flow: #50E6FF
+- External systems: #FF8C00
+
+## Output Format
+- Tool chain: pptx via html2pptx
+- Image resolution: 300 DPI / 2x scale
+```
+
+**Every sub-agent prompt must include**: "Read `style_contract.md` at
+`outputs/{project-name}/style_contract.md` for all styling rules."
+
+### Step 3: Execute Phase by Phase (WRITE FILES AT EACH STEP)
+
+Work through each phase. **After completing each task:**
+
+1. Write the output files to the workspace directory
+2. Mark it `[x]` in `task_plan.md` (use Edit tool)
+3. Append to `progress.md` what was created and where
+
+**Phase 1 — Research:**
+```
+# After research is done, WRITE to disk:
+Write findings.md → outputs/{project-name}/findings.md
+Edit task_plan.md → mark research tasks [x]
+Append to progress.md → "Phase 1 complete. findings.md written with N topics."
+```
+
+**Phase 2 — Diagrams:**
+```
+# After each diagram is generated, WRITE to disk:
+Save PNG → outputs/{project-name}/diagrams/{name}.png
+Write manifest → outputs/{project-name}/diagrams/manifest.md
+Edit task_plan.md → mark diagram tasks [x]
+Append to progress.md → "Phase 2 complete. N diagrams saved to diagrams/."
+```
+
+**Phase 3 — Slides:**
+```
+# After each slide is built, WRITE to disk:
+Save slide → outputs/{project-name}/slides/slide-{N}.html
+Save notes → outputs/{project-name}/slides/slide-{N}-notes.md
+Write manifest → outputs/{project-name}/slides/manifest.md
+Edit task_plan.md → mark slide task [x]
+Append to progress.md → "Slide N complete."
+```
 
 ### Step 4: Parallel Execution (Optional)
 
@@ -143,28 +258,34 @@ Each sub-agent MUST receive:
 3. A reference to any already-completed slides for visual consistency
 4. The same sub-skill SKILL.md instructions
 
-Example parallel dispatch using Slide Builder Agents:
+Example parallel dispatch — note every agent gets the **workspace path** so it reads
+shared files (style_contract.md, findings.md) and writes to the correct location:
+
 ```
 Slide Builder A: "Build slides 3-5 (customer challenges + solution overview + architecture).
-  Style Contract: [paste from plan].
-  Output format: pptx html2pptx.
+  Workspace: outputs/rag-demo/
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  READ findings from: outputs/rag-demo/findings.md
+  READ diagrams from: outputs/rag-demo/diagrams/
+  WRITE slides to: outputs/rag-demo/slides/slide-3.html, slide-4.html, slide-5.html
+  WRITE notes to: outputs/rag-demo/slides/slide-3-notes.md, etc.
   Sub-skill: pptx/SKILL.md
-  Output dir: outputs/slides-3-5/
-  Findings: outputs/findings.md
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
 Slide Builder B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
-  Style Contract: [paste from plan].
-  Output format: pptx html2pptx.
+  Workspace: outputs/rag-demo/
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  READ findings from: outputs/rag-demo/findings.md
+  WRITE slides to: outputs/rag-demo/slides/slide-6.html, slide-7.html, slide-8.html
   Sub-skill: pptx/SKILL.md
-  Output dir: outputs/slides-6-8/
-  Findings: outputs/findings.md
   Instructions: Read agents/slide-builder-agent.md for the build protocol."
 
-Diagram Agent: "Generate architecture diagrams using azure-diagrams.
-  Color scheme: Azure Blue + Green + Orange.
-  Instructions: Read azure-diagrams/SKILL.md.
-  Save to: outputs/diagrams/"
+Diagram Agent: "Generate architecture diagrams.
+  Workspace: outputs/rag-demo/
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  WRITE diagrams to: outputs/rag-demo/diagrams/
+  WRITE manifest to: outputs/rag-demo/diagrams/manifest.md
+  Instructions: Read azure-diagrams/SKILL.md + agents/diagram-agent.md."
 ```
 
 After all sub-agents complete, assemble into the final deck in Phase 4.
@@ -178,31 +299,42 @@ Read `agents/review-agent.md` for the full review protocol.
 ```
 Review Agent: "Review the assembled presentation for quality and consistency.
 
-  Style Contract:
-    [paste the full Style Contract from task_plan.md]
-
-  Output files: outputs/final-deck.pptx
+  Workspace: outputs/rag-demo/
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  READ deck from: outputs/rag-demo/final/final-deck.pptx
   Review round: 1
   Previous review: none
+  WRITE review_report.md to: outputs/rag-demo/final/review_report.md
 
   Instructions: Read agents/review-agent.md for the full review protocol."
 ```
 
-The review agent produces `review_report.md` with per-slide PASS/FIX verdicts.
+The review agent writes `review_report.md` to disk with per-slide PASS/FIX verdicts.
 
 **Apply Fixes:**
-If the overall verdict is NEEDS_FIX, read the review report and apply the fixes.
-The fixes are applied by the orchestrator or by dispatching sub-agents to the
-relevant slides/tools.
+If the overall verdict is NEEDS_FIX, spawn the Fix Agent:
+```
+Fix Agent: "Apply fixes from the review report.
+
+  Workspace: outputs/rag-demo/
+  READ review_report.md from: outputs/rag-demo/final/review_report.md
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  READ/WRITE deck: outputs/rag-demo/final/final-deck.pptx
+  WRITE fix_summary.md to: outputs/rag-demo/final/fix_summary.md
+
+  Instructions: Read agents/fix-agent.md for the fix protocol."
+```
 
 **Round 2 — Verify Fixes:**
 ```
 Review Agent: "Verify that Round 1 fixes were applied correctly.
 
-  Style Contract: [same as Round 1]
-  Output files: outputs/final-deck.pptx
+  Workspace: outputs/rag-demo/
+  READ style_contract.md from: outputs/rag-demo/style_contract.md
+  READ deck from: outputs/rag-demo/final/final-deck.pptx
+  READ previous review from: outputs/rag-demo/final/review_report.md
   Review round: 2
-  Previous review: outputs/review_report.md
+  WRITE updated review_report.md to: outputs/rag-demo/final/review_report.md
 
   Instructions: Read agents/review-agent.md for the Round 2 protocol."
 ```
@@ -259,86 +391,17 @@ When the user provides a template:
 
 ## Common CSA Workflows
 
-Read the appropriate reference file for detailed step-by-step guidance:
+Read the appropriate reference file for the scenario at hand:
 
-### Customer Solution Demo
-→ Read `references/workflow-customer-demo.md`
+| Scenario | Reference | Typical Flow |
+|----------|-----------|-------------|
+| Customer Demo | `references/workflow-customer-demo.md` | Research → Diagrams → Narrative deck |
+| Tech Sharing | `references/workflow-tech-sharing.md` | Outline → Code visuals → HTML/PPTX |
+| Workshop | `references/workflow-workshop.md` | Steps → Code + diagrams → HTML slides |
+| Architecture Review | `references/workflow-architecture-review.md` | As-is diagram → Gap analysis → Deck |
+| Template Fill | `references/workflow-template-fill.md` | Analyze template → Map → Fill → Verify |
 
-Typical flow: Research (Tavily) → Architecture diagram (azure-diagrams) → Deck with
-solution narrative (pptx or skywork-ppt)
-
-### Internal Tech Sharing / Brown Bag
-→ Read `references/workflow-tech-sharing.md`
-
-Typical flow: Content outline → Code/architecture visuals → Interactive HTML deck
-(frontend-slides) or quick .pptx (skywork-ppt)
-
-### Workshop / Hands-on Lab
-→ Read `references/workflow-workshop.md`
-
-Typical flow: Step-by-step content → Code snippets + diagrams → HTML presentation
-(frontend-slides) with embedded architecture diagrams
-
-### Architecture Review (CAF/WAF)
-→ Read `references/workflow-architecture-review.md`
-
-Typical flow: Current-state diagram → Gap analysis visuals → Recommendations deck
-
-### Template Fill (Event / HR / External)
-→ Read `references/workflow-template-fill.md`
-
-Typical flow: Analyze template → Map content to layouts → Fill preserving style
-
-## Orchestration Patterns
-
-### Pattern 1: Diagrams + Deck (most common)
-
-When the user needs architecture diagrams IN a presentation:
-
-1. Generate diagrams first using **azure-diagrams** or **excalidraw-diagram**
-   - Save as PNG files with descriptive names
-   - Use high resolution (300 DPI / 2x scale)
-2. Create the deck using **pptx** or **skywork-ppt**
-   - Reference the generated images
-   - Position diagrams with appropriate sizing
-3. Verify: Open the .pptx or HTML and check that diagrams render correctly
-
-### Pattern 2: Research + Content + Deck
-
-When building a deck from a topic (not existing content):
-
-1. Research using **Tavily** web search if available (Azure docs, best practices, latest updates)
-2. Synthesize into a clear narrative arc:
-   - Problem / Challenge
-   - Solution Overview
-   - Architecture Deep-Dive
-   - Implementation Path
-   - Benefits / ROI
-3. Generate appropriate visuals
-4. Assemble into the final deck
-
-### Pattern 3: Template + Content Fill
-
-When filling a provided template:
-
-1. Analyze the template structure (layouts, placeholders, style)
-2. If content needs research, do that first
-3. Generate any needed diagrams
-4. Fill the template, matching its style language
-5. Verify nothing is broken
-
-## MCP Integration
-
-When these MCP servers are available, leverage them:
-
-- **Tavily**: Research Azure services, pricing, best practices, case studies before
-  building content. Especially useful for customer demos where you need current
-  information.
-- **Figma**: If the user has design specs in Figma, use `get_design_context` to extract
-  visual specifications and maintain design consistency.
-- **Pencil**: For quick UI mockups and wireframes that need to go into the presentation.
-- **Playwright**: For capturing screenshots of live Azure portal, dashboards, or web
-  apps to embed in slides.
+For orchestration patterns and MCP integration details, read `references/orchestration-and-mcp.md`.
 
 ## Sub-Skill Locations
 
@@ -370,19 +433,43 @@ relevant agent file before spawning it.
 | **Review Agent** | `agents/review-agent.md` | Phase 5 — quality review (7 dimensions, max 2 rounds) |
 | **Fix Agent** | `agents/fix-agent.md` | Phase 5 — apply fixes from review report |
 
-**Agent interaction flow:**
+**Agent interaction flow (file-based):**
 ```
-Phase 1: Research Agent → findings.md
-Phase 2: Diagram Agent → diagram images + diagram-manifest.md
-Phase 3: Slide Builder Agent(s) → slide files + manifest.md (parallelizable)
-Phase 4: Assembly Agent → final-deck.pptx/html + assembly-report.md
-Phase 5: Review Agent (Round 1) → review_report.md
-         Fix Agent → apply fixes → fix_summary.md
-         Review Agent (Round 2) → final verdict → deliver
+Phase 0: Orchestrator
+  WRITES → task_plan.md, style_contract.md, progress.md
+
+Phase 1: Research Agent
+  READS  ← task_plan.md
+  WRITES → findings.md
+
+Phase 2: Diagram Agent
+  READS  ← task_plan.md, style_contract.md
+  WRITES → diagrams/*.png, diagrams/manifest.md
+
+Phase 3: Slide Builder Agent(s)  [parallelizable]
+  READS  ← style_contract.md, findings.md, diagrams/
+  WRITES → slides/slide-{N}.html, slides/slide-{N}-notes.md, slides/manifest.md
+
+Phase 4: Assembly Agent
+  READS  ← task_plan.md, slides/, diagrams/
+  WRITES → final/final-deck.pptx, final/assembly-report.md
+
+Phase 5: Review Agent (Round 1)
+  READS  ← style_contract.md, final/final-deck.pptx
+  WRITES → final/review_report.md
+
+Phase 5: Fix Agent
+  READS  ← final/review_report.md, style_contract.md, final/final-deck.pptx
+  WRITES → final/final-deck.pptx (updated), final/fix_summary.md
+
+Phase 5: Review Agent (Round 2)
+  READS  ← style_contract.md, final/final-deck.pptx, final/review_report.md
+  WRITES → final/review_report.md (updated)
 ```
 
-Each sub-agent receives the **Style Contract** and **sub-skill SKILL.md** as part of
-its prompt. This ensures consistent behavior even when agents run in parallel.
+Each sub-agent receives the **workspace path** so it can READ shared files
+(style_contract.md, findings.md) and WRITE outputs to the correct location.
+All files are in `outputs/{project-name}/`.
 
 ## Quality Checklist
 
@@ -399,13 +486,10 @@ Before delivering any presentation, verify:
 
 ## Tips for CSA Presentations
 
-- **Lead with the customer's problem**, not Azure features. Architecture slides should
-  answer "why this design?" not just "what services are used."
-- **Use progressive disclosure** in architecture diagrams — start simple, add layers.
-  Don't dump a full architecture on slide 2.
-- **Include decision rationale** — why CosmosDB over SQL? Why Event Hub over Service Bus?
-  CSA credibility comes from showing you understand trade-offs.
-- **Reference Well-Architected Framework pillars** when relevant — reliability, security,
-  cost optimization, operational excellence, performance efficiency.
-- **For workshops**: Include "try it yourself" moments with clear instructions. Screenshot
-  the Azure Portal steps if possible (Playwright MCP can help here).
+→ For detailed tips, read `references/orchestration-and-mcp.md`
+
+Key principles:
+- Lead with the customer's problem, not Azure features
+- Use progressive disclosure in architecture diagrams
+- Include decision rationale (why CosmosDB over SQL?)
+- Reference Well-Architected Framework pillars when relevant
