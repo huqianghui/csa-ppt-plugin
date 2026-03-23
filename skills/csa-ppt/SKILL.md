@@ -21,10 +21,135 @@ templates from event organizers or HR that need to be filled with content.
 
 ## How This Skill Works
 
-This skill orchestrates 5 specialized sub-skills plus MCP integrations. Your job is to
-analyze the request, pick the right tool chain, and deliver a polished result. For simple
-requests, decide automatically. For complex or ambiguous ones, briefly present the
-recommended approach and confirm before proceeding.
+This skill orchestrates 5 specialized sub-skills, a planning system, and MCP integrations.
+Every presentation follows a **Plan-first, slide-by-slide execution** workflow:
+
+1. **Plan** — Break the presentation into a task plan where each slide/chapter = one task
+2. **Define Style** — Lock down colors, fonts, layout rules BEFORE any slide is created
+3. **Execute** — Complete slides one by one (or in parallel via sub-agents), checking off
+   each task as it's done
+4. **Verify** — Review the assembled result for consistency
+
+For simple requests (< 5 slides), the planning can be lightweight. For anything larger,
+use the full planning-with-files workflow to track progress.
+
+## Planning Workflow (Plan First, Then Build)
+
+Before creating any presentation with 5+ slides, initialize a plan using the
+**planning-with-files** skill. Read `planning-with-files/SKILL.md` for the full system.
+
+### Step 1: Create the Slide Plan
+
+After understanding the user's request, create a `task_plan.md` with one task per
+slide or logical chapter. Example:
+
+```markdown
+## Goal
+Create a 10-slide customer demo about Azure RAG solution for a finance company.
+
+## Style Contract
+- **Color palette**: Azure Blue (#0078D4), Dark (#1B1B1B), Light Gray (#F5F5F5), Accent (#50E6FF)
+- **Font**: Arial (headings), Segoe UI (body), Consolas (code)
+- **Language**: Chinese (中文)
+- **Layout rules**: Max 6 lines per slide, max 6 words per bullet
+- **Diagram style**: Azure official icons, blue/green/orange color coding
+- **Output format**: .pptx via html2pptx
+
+## Phases
+
+### Phase 1: Research & Content Preparation
+**Status:** pending
+- [ ] Research Azure OpenAI + AI Search latest features
+- [ ] Gather financial industry RAG reference architectures
+- [ ] Save findings to findings.md
+
+### Phase 2: Diagram Generation
+**Status:** pending
+- [ ] Generate RAG architecture overview diagram (azure-diagrams)
+- [ ] Generate data pipeline diagram (azure-diagrams)
+
+### Phase 3: Slide-by-Slide Creation
+**Status:** pending
+- [ ] Slide 1: Title — "企业级RAG智能检索方案"
+- [ ] Slide 2: Agenda / 目录
+- [ ] Slide 3: Customer challenges / 客户痛点
+- [ ] Slide 4: Solution overview / 方案概览
+- [ ] Slide 5: Architecture deep-dive / 架构详解 (embed diagram)
+- [ ] Slide 6: Data pipeline / 数据处理流程 (embed diagram)
+- [ ] Slide 7: Chinese document optimization / 中文文档优化
+- [ ] Slide 8: Security & compliance / 安全合规
+- [ ] Slide 9: Implementation roadmap / 实施路径
+- [ ] Slide 10: Next steps / 下一步
+
+### Phase 4: Assembly & Verification
+**Status:** pending
+- [ ] Assemble all slides into final .pptx
+- [ ] Verify visual consistency across all slides
+- [ ] Check Chinese text rendering
+- [ ] Add speaker notes
+```
+
+### Step 2: Lock the Style Contract
+
+The **Style Contract** in the plan is critical — it ensures consistency whether you build
+slides sequentially or in parallel. Before creating any slide, the style contract must
+define:
+
+- Color palette (primary, secondary, accent, background)
+- Font family for headings, body text, and code
+- Language and text direction
+- Content density rules (max bullets, max words per bullet)
+- Diagram color coding conventions
+- Output format and tool chain
+
+Every slide must reference this contract. When using sub-agents, pass the Style Contract
+to each one explicitly.
+
+### Step 3: Execute Slide by Slide
+
+Work through Phase 3 one task at a time. After completing each slide:
+
+1. Mark it `[x]` in `task_plan.md`
+2. Update `progress.md` with what was created
+3. Move to the next slide
+
+### Step 4: Parallel Execution (Optional)
+
+For large presentations (10+ slides), you can use multiple sub-agents to build different
+chapters simultaneously. The key rules for parallel execution:
+
+**What to parallelize:**
+- Independent content chapters (e.g., "Security" and "Cost Optimization" slides)
+- Diagram generation (can run alongside slide creation)
+- Research tasks (web search for different topics)
+
+**What must be sequential:**
+- Title slide and agenda (created first, defines the structure)
+- Final assembly and verification (created last)
+
+**How to keep style consistent across sub-agents:**
+Each sub-agent MUST receive:
+1. The **Style Contract** from the plan (colors, fonts, layout rules)
+2. The **output format** and tool chain to use
+3. A reference to any already-completed slides for visual consistency
+4. The same sub-skill SKILL.md instructions
+
+Example parallel dispatch:
+```
+Sub-agent A: "Build slides 3-5 (customer challenges + solution overview + architecture).
+  Style Contract: [paste from plan]. Use pptx html2pptx workflow.
+  Save to: outputs/slides-3-5/"
+
+Sub-agent B: "Build slides 6-8 (data pipeline + Chinese optimization + security).
+  Style Contract: [paste from plan]. Use pptx html2pptx workflow.
+  Save to: outputs/slides-6-8/"
+
+Sub-agent C: "Generate architecture diagrams using azure-diagrams.
+  Color scheme: Azure Blue + Green + Orange.
+  Save to: outputs/diagrams/"
+```
+
+After all sub-agents complete, assemble into the final deck in Phase 4.
 
 ## Decision Framework
 
@@ -156,10 +281,11 @@ When these MCP servers are available, leverage them:
 
 ## Sub-Skill Locations
 
-These paths are relative to the project root:
+These paths are relative to the skill directory:
 
 | Skill | Path | When to Read |
 |-------|------|-------------|
+| planning-with-files | `planning-with-files/SKILL.md` | **Always** for 5+ slide decks — plan before build |
 | azure-diagrams | `azure-diagrams/SKILL.md` | Need any Azure/architecture diagram |
 | excalidraw-diagram | `excalidraw-diagram/SKILL.md` | Need hand-drawn style diagrams |
 | frontend-slides | `frontend-slides/SKILL.md` | Creating HTML presentations |
