@@ -1,0 +1,14 @@
+{
+  "name": "csa-ppt",
+  "version": "1.1.0",
+  "description": "All-in-one presentation toolkit for Cloud Solution Architects",
+  "agents": {
+    "csa-ppt": { "path": ".opencode/agents/csa-ppt" },
+    "azure-diagrams": { "path": ".opencode/agents/azure-diagrams" },
+    "excalidraw-diagram": { "path": ".opencode/agents/excalidraw-diagram" },
+    "frontend-slides": { "path": ".opencode/agents/frontend-slides" },
+    "pptx": { "path": ".opencode/agents/pptx" },
+    "skywork-ppt": { "path": ".opencode/agents/skywork-ppt" },
+    "planning-with-files": { "path": ".opencode/agents/planning-with-files" }
+  }
+}

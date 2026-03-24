@@ -1,6 +1,8 @@
 # CSA PPT Plugin
 
-All-in-one presentation toolkit for **Cloud Solution Architects** (Azure / AWS / GCP), built for Claude Code.
+All-in-one presentation toolkit for **Cloud Solution Architects** (Azure / AWS / GCP).
+
+Works with **Claude Code**, **Cursor**, **GitHub Copilot CLI**, **OpenAI Codex CLI**, **Windsurf**, and **OpenCode**.
 
 ## What's Inside
 
@@ -79,17 +81,66 @@ before merging into the final deck.
 
 ## Installation
 
-### Add the marketplace and install:
+### Claude Code (Primary)
 
 ```bash
+# Via marketplace (recommended)
 /plugin marketplace add huqianghui/csa-ppt-plugin
 /plugin install csa-ppt@csa-skills
+
+# Or load directly for testing
+claude --plugin-dir /path/to/csa-ppt-plugin
 ```
 
-### Or load directly for testing:
+### Cursor
+
+Clone to your project and Cursor auto-discovers `.cursor-plugin/plugin.json`:
+```bash
+git clone https://github.com/huqianghui/csa-ppt-plugin.git .cursor-plugins/csa-ppt
+```
+Or add individual skill paths in **Cursor Settings > Skills**.
+
+### GitHub Copilot CLI
 
 ```bash
-claude --plugin-dir /path/to/csa-ppt-plugin
+# Install from GitHub
+copilot plugin install huqianghui/csa-ppt-plugin
+
+# Or clone to project — Copilot reads .github/plugin/plugin.json
+git clone https://github.com/huqianghui/csa-ppt-plugin.git
+```
+
+### OpenAI Codex CLI
+
+```bash
+# Symlink skills into Codex discovery path
+ln -s /path/to/csa-ppt-plugin/skills ~/.codex/skills
+
+# Or add to ~/.codex/config.toml
+# [[skills.config]]
+# path = "/path/to/csa-ppt-plugin/skills/csa-ppt"
+```
+
+### Windsurf
+
+```bash
+# Symlink to global skills
+ln -s /path/to/csa-ppt-plugin/skills ~/.codeium/windsurf/skills
+
+# Or clone to project — Windsurf reads .agents/skills/ automatically
+```
+
+### OpenCode
+
+Clone to project root. OpenCode reads `opencode.json` automatically:
+```bash
+git clone https://github.com/huqianghui/csa-ppt-plugin.git
+```
+
+### Verify Installation (All Platforms)
+
+```bash
+bash scripts/install.sh
 ```
 
 ## Usage
@@ -155,9 +206,20 @@ All changes you make to intermediate files will be picked up by the next phase.
 
 ```
 csa-ppt-plugin/
-├── .claude-plugin/
-│   ├── plugin.json              # Plugin manifest
-│   └── marketplace.json         # Marketplace registration
+├── .claude-plugin/              # Claude Code manifest
+│   ├── plugin.json
+│   └── marketplace.json
+├── .cursor-plugin/              # Cursor manifest
+│   └── plugin.json
+├── .github/plugin/              # GitHub Copilot CLI manifest
+│   └── plugin.json
+├── .codex/skills -> skills      # Codex CLI symlink
+├── .agents/skills -> skills     # Cross-platform symlink (Cursor/Windsurf)
+├── .windsurf/skills -> skills   # Windsurf symlink
+├── .opencode/agents -> skills   # OpenCode symlink
+├── opencode.json                # OpenCode config
+├── scripts/
+│   └── install.sh               # Multi-platform installer & verifier
 ├── skills/
 │   ├── csa-ppt/                 # Main orchestrator
 │   │   ├── SKILL.md             # Routing logic, workflow, Style Contract

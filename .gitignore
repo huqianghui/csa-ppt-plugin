@@ -18,3 +18,9 @@ outputs/
 # IDE
 .vscode/
 .idea/
+
+# Platform-generated caches
+.cursor/
+.windsurf-cache/
+.opencode-cache/
+.codex/cache/
